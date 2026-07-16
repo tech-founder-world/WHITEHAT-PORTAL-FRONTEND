@@ -1,0 +1,335 @@
+/* ===== ATTENDANCE HISTORY CSS ===== */
+
+/* ===== TABS ===== */
+.tabs-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 4px;
+  width: fit-content;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-btn {
+  padding: 8px 18px;
+  border-radius: calc(var(--border-radius) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--gray-600);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: var(--font-primary);
+}
+
+.tab-btn:hover { background: var(--gray-50); color: var(--black); }
+
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* ===== FILTERS CARD ===== */
+.filters-card {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+}
+
+.roll-badge-sm {
+  display: inline-block;
+  background: var(--gray-100);
+  color: var(--gray-800);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* ===== STATS CARDS ===== */
+.stats-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stat-student-card {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-student-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.stat-student-avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--primary-bg);
+  color: var(--primary);
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-student-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--black);
+}
+
+.stat-student-meta {
+  font-size: 12px;
+  color: var(--gray-600);
+}
+
+.stat-attendance {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-present-absent {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.stat-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--gray-100);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.stat-pct {
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 44px;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .stat-student-card { flex-direction: column; align-items: stretch; }
+  .stat-student-info { width: auto; }
+}
+
+/* ===== STUDENT PROFILE GRID ===== */
+.student-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.student-profile-card {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.student-profile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+
+.spc-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-bg);
+  color: var(--primary);
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.spc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.spc-name {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spc-roll {
+  font-size: 11px;
+  color: var(--gray-600);
+  font-family: monospace;
+  margin-bottom: 4px;
+}
+
+.spc-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.spc-stat {
+  text-align: right;
+  flex-shrink: 0;
+  width: 70px;
+}
+
+.spc-pct {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.spc-ratio {
+  font-size: 11px;
+  margin-top: 1px;
+}
+
+/* ===== STUDENT PROFILE DRAWER ===== */
+.profile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-drawer {
+  background: var(--white);
+  width: 560px;
+  max-width: 100vw;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 0.22s ease;
+  padding: 24px;
+  gap: 16px;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 22px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-info { flex: 1; }
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--black);
+}
+
+.profile-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  align-items: center;
+}
+
+.profile-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--gray-600);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  line-height: 1;
+}
+.profile-close:hover { background: var(--gray-100); }
+
+.profile-stats-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-stat-chip {
+  background: var(--off-white);
+  border: 1px solid var(--gray-100);
+  border-radius: 10px;
+  padding: 10px 14px;
+  text-align: center;
+  flex: 1;
+  min-width: 90px;
+}
+
+.profile-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.profile-scroll::-webkit-scrollbar { width: 4px; }
+.profile-scroll::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 2px; }

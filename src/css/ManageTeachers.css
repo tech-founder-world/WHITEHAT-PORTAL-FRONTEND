@@ -1,0 +1,36 @@
+/* ===== MANAGE TEACHERS CSS ===== */
+
+.teacher-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.teacher-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--primary-bg);
+  color: var(--primary);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.subject-tags-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.subject-tag {
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}

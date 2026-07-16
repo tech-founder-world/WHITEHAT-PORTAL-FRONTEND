@@ -1,0 +1,174 @@
+/* ===== MARK ATTENDANCE CSS ===== */
+
+.attendance-controls {
+  margin-bottom: 16px;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .controls-grid { grid-template-columns: 1fr; }
+}
+
+.editing-notice {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ===== SUMMARY BAR ===== */
+.attendance-summary {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+}
+
+.summary-num {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--black);
+  line-height: 1;
+}
+
+.summary-stat.present .summary-num { color: var(--success); }
+.summary-stat.absent .summary-num { color: var(--danger); }
+
+.summary-label {
+  font-size: 11px;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ===== STUDENT LIST ===== */
+.student-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.student-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background var(--transition);
+}
+
+.student-row:last-child {
+  border-bottom: none;
+}
+
+.student-row.present {
+  background: #FAFFF9;
+}
+
+.student-row.absent {
+  background: #FFFAFA;
+}
+
+.student-index {
+  width: 24px;
+  font-size: 12px;
+  color: var(--gray-400);
+  font-weight: 500;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.student-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--black);
+}
+
+.student-meta {
+  font-size: 12px;
+  color: var(--gray-600);
+}
+
+.attendance-toggle {
+  display: flex;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.toggle-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--white);
+  color: var(--gray-600);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 0.5px;
+}
+
+.toggle-btn:not(:last-child) {
+  border-right: 1.5px solid var(--gray-200);
+}
+
+.toggle-btn.present-btn.active {
+  background: var(--success);
+  color: white;
+}
+
+.toggle-btn.absent-btn.active {
+  background: var(--danger);
+  color: white;
+}
+
+.toggle-btn:not(.active):hover {
+  background: var(--gray-50);
+}
+
+/* ===== SUBMIT ROW ===== */
+.submit-row {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit-row .btn {
+  padding: 10px 28px;
+  font-size: 14px;
+}

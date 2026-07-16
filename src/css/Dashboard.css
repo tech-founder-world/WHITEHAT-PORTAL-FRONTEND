@@ -1,0 +1,97 @@
+/* ===== DASHBOARD CSS ===== */
+
+.dashboard {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ===== QUICK ACTIONS ===== */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: var(--white);
+  border: 1.5px solid var(--gray-100);
+  border-radius: var(--border-radius);
+  text-decoration: none;
+  color: var(--black);
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.quick-action-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-orange);
+  transform: translateY(-2px);
+}
+
+.qa-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.qa-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.qa-title {
+  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 15px;
+  margin-bottom: 3px;
+  color: var(--black);
+}
+
+.qa-desc {
+  font-size: 12.5px;
+  color: var(--gray-600);
+  line-height: 1.5;
+}
+
+.qa-arrow {
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all var(--transition);
+}
+
+.quick-action-card:hover .qa-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ===== SUBJECT TAGS ===== */
+.card-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.subject-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subject-tag {
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(232,71,10,0.2);
+}
