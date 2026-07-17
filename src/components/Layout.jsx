@@ -68,6 +68,12 @@ export default function Layout() {
           description: "Manage students",
         },
         {
+          path: "/admin/projects", // Add this
+          label: "Projects",
+          icon: "📁",
+          description: "Manage projects",
+        },
+        {
           path: "/admin/attendance",
           label: "Attendance",
           icon: "📋",
@@ -87,6 +93,12 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
+        },
+        {
+          path: "/counsellor/batches", // Add this
+          label: "Batches",
+          icon: "📚",
+          description: "Manage batches",
         },
         {
           path: "/counsellor/students",

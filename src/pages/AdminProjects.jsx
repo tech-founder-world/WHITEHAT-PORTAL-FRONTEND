@@ -3,10 +3,11 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api";
 import "../css/Projects.css";
 
-export default function TeacherProjects() {
+export default function AdminProjects() {
   const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [students, setStudents] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -17,6 +18,7 @@ export default function TeacherProjects() {
     name: "",
     description: "",
     subject: "",
+    teacher: "",
     startDate: "",
     endDate: "",
     students: [],
@@ -24,8 +26,6 @@ export default function TeacherProjects() {
   });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
-
-  const subjects = user?.subjects || [];
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -51,13 +51,15 @@ export default function TeacherProjects() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [projectsRes, studentsRes] = await Promise.all([
+      const [projectsRes, studentsRes, teachersRes] = await Promise.all([
         api.get("/projects"),
         api.get("/students"),
+        api.get("/admin/teachers"),
       ]);
       setProjects(projectsRes.data || []);
       setStudents(studentsRes.data || []);
       setFilteredStudents(studentsRes.data || []);
+      setTeachers(teachersRes.data || []);
     } catch (err) {
       console.error("Error fetching data:", err);
       showToast("Error loading data", "error");
@@ -70,7 +72,8 @@ export default function TeacherProjects() {
     setForm({
       name: "",
       description: "",
-      subject: subjects[0] || "",
+      subject: "",
+      teacher: teachers[0]?._id || "",
       startDate: "",
       endDate: "",
       students: [],
@@ -85,6 +88,7 @@ export default function TeacherProjects() {
       name: project.name,
       description: project.description || "",
       subject: project.subject,
+      teacher: project.teacher?._id || project.teacher || "",
       startDate: project.startDate || "",
       endDate: project.endDate || "",
       students: project.students.map((s) => s._id || s),
@@ -106,8 +110,8 @@ export default function TeacherProjects() {
   };
 
   const handleSaveProject = async () => {
-    if (!form.name || !form.subject) {
-      showToast("Project name and subject required", "error");
+    if (!form.name || !form.subject || !form.teacher) {
+      showToast("Project name, subject, and teacher required", "error");
       return;
     }
 
@@ -117,7 +121,7 @@ export default function TeacherProjects() {
         name: form.name,
         description: form.description,
         subject: form.subject,
-        // Teacher is automatically set to current user - no need to send teacher field
+        teacher: form.teacher,
         startDate: form.startDate,
         endDate: form.endDate,
         students: form.students,
@@ -180,7 +184,7 @@ export default function TeacherProjects() {
       >
         <div>
           <h1 className="page-title">Projects</h1>
-          <p className="page-subtitle">Create and manage student projects</p>
+          <p className="page-subtitle">Manage all projects across the system</p>
         </div>
         <button className="btn btn-primary" onClick={openCreateProject}>
           + New Project
@@ -198,7 +202,7 @@ export default function TeacherProjects() {
             <div className="empty-icon">📁</div>
             <p>No projects created yet</p>
             <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-              Create a project and add students to it
+              Create a project and assign it to a teacher
             </p>
           </div>
         ) : (
@@ -215,6 +219,9 @@ export default function TeacherProjects() {
                 </div>
                 <div className="project-details">
                   <p className="project-subject">📚 {project.subject}</p>
+                  <p className="project-teacher">
+                    👨‍🏫 Teacher: {project.teacher?.name || "Unknown"}
+                  </p>
                   <p className="project-desc">
                     {project.description || "No description"}
                   </p>
@@ -255,7 +262,7 @@ export default function TeacherProjects() {
         )}
       </div>
 
-      {/* Project Modal - Removed teacher field */}
+      {/* Project Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -287,15 +294,25 @@ export default function TeacherProjects() {
 
             <div className="form-group">
               <label className="form-label">Subject *</label>
-              <select
+              <input
                 className="form-control"
+                placeholder="e.g. Computer Science"
                 value={form.subject}
                 onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Assign Teacher *</label>
+              <select
+                className="form-control"
+                value={form.teacher}
+                onChange={(e) => setForm({ ...form, teacher: e.target.value })}
               >
-                <option value="">Select Subject</option>
-                {subjects.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                <option value="">Select Teacher</option>
+                {teachers.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} ({t.email})
                   </option>
                 ))}
               </select>
@@ -359,19 +376,6 @@ export default function TeacherProjects() {
               />
             </div>
 
-            <div
-              style={{
-                padding: "10px",
-                background: "var(--info-bg)",
-                borderRadius: "var(--border-radius)",
-                marginBottom: "16px",
-                fontSize: "13px",
-                color: "var(--info)",
-              }}
-            >
-              ℹ️ You are creating this project as: <strong>{user?.name}</strong>
-            </div>
-
             <div className="form-actions">
               <button
                 className="btn btn-outline"
@@ -395,7 +399,7 @@ export default function TeacherProjects() {
         </div>
       )}
 
-      {/* Add Students Modal - same as before */}
+      {/* Add Students Modal */}
       {showStudentModal && selectedProject && (
         <div
           className="modal-overlay"
@@ -428,6 +432,7 @@ export default function TeacherProjects() {
               Select students who will participate in this project
             </p>
 
+            {/* Search Input */}
             <div className="form-group" style={{ marginBottom: "12px" }}>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input

@@ -7,6 +7,7 @@ import "../css/Dashboard.css";
 export default function CounsellorDashboard() {
   const { user } = useAuth();
   const [assignedStudents, setAssignedStudents] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [todayRecords, setTodayRecords] = useState(0);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ present: 0, absent: 0 });
@@ -19,6 +20,10 @@ export default function CounsellorDashboard() {
         // Fetch assigned students
         const studentsRes = await api.get(`/counsellor/students`);
         setAssignedStudents(studentsRes.data);
+
+        // Fetch batches
+        const batchesRes = await api.get("/batches");
+        setBatches(batchesRes.data);
 
         // Fetch today's attendance for assigned students
         const attendanceRes = await api.get(`/attendance?date=${today}`);
@@ -57,6 +62,10 @@ export default function CounsellorDashboard() {
             {loading ? "—" : assignedStudents.length}
           </div>
         </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #667eea" }}>
+          <div className="stat-label">Total Batches</div>
+          <div className="stat-value">{loading ? "—" : batches.length}</div>
+        </div>
         <div className="stat-card green">
           <div className="stat-label">Today's Present</div>
           <div className="stat-value">{loading ? "—" : stats.present}</div>
@@ -78,12 +87,19 @@ export default function CounsellorDashboard() {
 
       <div className="quick-actions-grid">
         <Link to="/counsellor/students" className="quick-action-card">
-          <div className="qa-icon">👥</div>
+          <div className="qa-icon">➕</div>
           <div className="qa-text">
-            <div className="qa-title">View Students</div>
-            <div className="qa-desc">
-              Browse your assigned students and their details
-            </div>
+            <div className="qa-title">Add Students</div>
+            <div className="qa-desc">Create and manage student profiles</div>
+          </div>
+          <div className="qa-arrow">→</div>
+        </Link>
+
+        <Link to="/counsellor/batches" className="quick-action-card">
+          <div className="qa-icon">📚</div>
+          <div className="qa-text">
+            <div className="qa-title">Manage Batches</div>
+            <div className="qa-desc">Create and organize student batches</div>
           </div>
           <div className="qa-arrow">→</div>
         </Link>
@@ -93,7 +109,7 @@ export default function CounsellorDashboard() {
           <div className="qa-text">
             <div className="qa-title">History & Stats</div>
             <div className="qa-desc">
-              View attendance records for your assigned students
+              View attendance records for your students
             </div>
           </div>
           <div className="qa-arrow">→</div>

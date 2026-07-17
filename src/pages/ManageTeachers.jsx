@@ -5,8 +5,6 @@ import "../css/ManageTeachers.css";
 const emptyForm = { name: "", email: "", password: "", subjects: [] };
 
 export default function ManageTeachers() {
-  console.log("teacher panel open");
-
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -15,6 +13,7 @@ export default function ManageTeachers() {
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [expandedTeacher, setExpandedTeacher] = useState(null);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -24,9 +23,23 @@ export default function ManageTeachers() {
   const fetchTeachers = async () => {
     try {
       const { data } = await api.get("/admin/teachers");
-      setTeachers(data);
+      // Fetch students for each teacher
+      const teachersWithStudents = await Promise.all(
+        data.map(async (teacher) => {
+          try {
+            const studentsRes = await api.get(
+              `/admin/teachers/${teacher._id}/students`,
+            );
+            return { ...teacher, students: studentsRes.data || [] };
+          } catch {
+            return { ...teacher, students: [] };
+          }
+        }),
+      );
+      setTeachers(teachersWithStudents);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching teachers:", err);
+      showToast("Error loading teachers", "error");
     } finally {
       setLoading(false);
     }
@@ -36,7 +49,7 @@ export default function ManageTeachers() {
     fetchTeachers();
   }, []);
 
-  // Collect all subjects already used across teachers (for quick-select)
+  // Collect all subjects already used across teachers
   const knownSubjects = [
     ...new Set(teachers.flatMap((t) => t.subjects)),
   ].sort();
@@ -129,6 +142,10 @@ export default function ManageTeachers() {
     }
   };
 
+  const toggleExpand = (teacherId) => {
+    setExpandedTeacher(expandedTeacher === teacherId ? null : teacherId);
+  };
+
   return (
     <div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
@@ -144,7 +161,7 @@ export default function ManageTeachers() {
         <div>
           <h1 className="page-title">Teachers</h1>
           <p className="page-subtitle">
-            Manage teacher accounts and their assigned subjects
+            Manage teacher accounts and their assigned students
           </p>
         </div>
         <button className="btn btn-primary" onClick={openAdd}>
@@ -171,7 +188,8 @@ export default function ManageTeachers() {
                   <th>#</th>
                   <th>Name</th>
                   <th>Email</th>
-                  <th>Subjects (Tags)</th>
+                  <th>Subjects</th>
+                  <th>Assigned Students</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -202,6 +220,15 @@ export default function ManageTeachers() {
                       </div>
                     </td>
                     <td>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => toggleExpand(t._id)}
+                      >
+                        {t.students?.length || 0} Students{" "}
+                        {expandedTeacher === t._id ? "▲" : "▼"}
+                      </button>
+                    </td>
+                    <td>
                       <div style={{ display: "flex", gap: "6px" }}>
                         <button
                           className="btn btn-outline btn-sm"
@@ -221,10 +248,70 @@ export default function ManageTeachers() {
                 ))}
               </tbody>
             </table>
+
+            {/* Expanded student list for each teacher */}
+            {expandedTeacher && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "16px",
+                  background: "var(--gray-50)",
+                  borderRadius: "var(--border-radius)",
+                }}
+              >
+                <h4 style={{ marginBottom: "12px" }}>
+                  Students assigned to{" "}
+                  {teachers.find((t) => t._id === expandedTeacher)?.name}
+                </h4>
+                {teachers.find((t) => t._id === expandedTeacher)?.students
+                  ?.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(200px, 1fr))",
+                      gap: "8px",
+                    }}
+                  >
+                    {teachers
+                      .find((t) => t._id === expandedTeacher)
+                      ?.students.map((student) => (
+                        <div
+                          key={student._id}
+                          style={{
+                            padding: "8px 12px",
+                            background: "var(--white)",
+                            borderRadius: "6px",
+                            border: "1px solid var(--gray-200)",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>{student.name}</span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--gray-500)",
+                            }}
+                          >
+                            {student.rollNumber}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p style={{ color: "var(--gray-500)", fontSize: "13px" }}>
+                    No students assigned yet
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {/* Modal - same as before */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -275,7 +362,6 @@ export default function ManageTeachers() {
               />
             </div>
 
-            {/* Subject Tags */}
             <div className="form-group">
               <label className="form-label">Assigned Subjects</label>
               <p
@@ -289,7 +375,6 @@ export default function ManageTeachers() {
                 same subject will appear when this teacher marks attendance.
               </p>
 
-              {/* Quick-select from existing subjects */}
               {knownSubjects.length > 0 && (
                 <div
                   style={{
@@ -329,7 +414,6 @@ export default function ManageTeachers() {
                 </div>
               )}
 
-              {/* New subject input */}
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
                   className="form-control"
@@ -350,7 +434,6 @@ export default function ManageTeachers() {
                 </button>
               </div>
 
-              {/* Selected subject tags */}
               {form.subjects.length > 0 && (
                 <div
                   style={{
