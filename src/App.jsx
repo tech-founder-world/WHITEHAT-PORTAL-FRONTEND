@@ -12,6 +12,7 @@ import MarkAttendance from "./pages/MarkAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import Evaluations from "./pages/Evaluations";
 import Layout from "./components/Layout";
+import TeacherProjects from "./pages/TeacherProjects";
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -67,6 +68,7 @@ export default function App() {
           >
             <Route index element={<TeacherDashboard />} />
             <Route path="mark-attendance" element={<MarkAttendance />} />
+            <Route path="projects" element={<TeacherProjects />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="students" element={<ManageStudents />} />
             <Route path="history" element={<AttendanceHistory />} />

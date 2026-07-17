@@ -135,10 +135,16 @@ export default function Layout() {
           description: "Attendance history",
         },
         {
+          path: "/teacher/projects",
+          label: "Projects",
+          icon: "📁",
+          description: "Manage projects",
+        },
+        {
           path: "/teacher/evaluations",
           label: "Evaluations",
           icon: "📝",
-          description: "Manage evaluations",
+          description: "Project evaluations",
         },
       ];
     }

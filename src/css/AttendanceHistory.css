@@ -26,7 +26,10 @@
   font-family: var(--font-primary);
 }
 
-.tab-btn:hover { background: var(--gray-50); color: var(--black); }
+.tab-btn:hover {
+  background: var(--gray-50);
+  color: var(--black);
+}
 
 .tab-btn.active {
   background: var(--primary);
@@ -142,8 +145,13 @@
 }
 
 @media (max-width: 640px) {
-  .stat-student-card { flex-direction: column; align-items: stretch; }
-  .stat-student-info { width: auto; }
+  .stat-student-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .stat-student-info {
+    width: auto;
+  }
 }
 
 /* ===== STUDENT PROFILE GRID ===== */
@@ -164,7 +172,10 @@
   align-items: flex-start;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .student-profile-card:hover {
@@ -233,7 +244,7 @@
 .profile-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 200;
   display: flex;
   justify-content: flex-end;
@@ -254,8 +265,14 @@
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .profile-header {
@@ -280,7 +297,9 @@
   flex-shrink: 0;
 }
 
-.profile-info { flex: 1; }
+.profile-info {
+  flex: 1;
+}
 
 .profile-name {
   font-size: 18px;
@@ -307,7 +326,9 @@
   transition: background 0.15s;
   line-height: 1;
 }
-.profile-close:hover { background: var(--gray-100); }
+.profile-close:hover {
+  background: var(--gray-100);
+}
 
 .profile-stats-row {
   display: flex;
@@ -331,5 +352,26 @@
   padding-right: 4px;
 }
 
-.profile-scroll::-webkit-scrollbar { width: 4px; }
-.profile-scroll::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 2px; }
+.profile-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.profile-scroll::-webkit-scrollbar-thumb {
+  background: var(--gray-200);
+  border-radius: 2px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .profile-drawer {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .profile-stats-row {
+    flex-direction: column;
+  }
+
+  .profile-stat-chip {
+    min-width: auto;
+  }
+}
