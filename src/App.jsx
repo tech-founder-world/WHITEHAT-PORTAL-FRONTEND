@@ -12,6 +12,7 @@ import MarkAttendance from "./pages/MarkAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import Evaluations from "./pages/Evaluations";
 import Layout from "./components/Layout";
+import PlacementPanel from "./components/PlacementPanel"; // ✅ Fixed import path
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -54,6 +55,8 @@ export default function App() {
             <Route path="students" element={<ManageStudents />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="attendance" element={<AttendanceHistory />} />
+            {/* ✅ PLACEMENT ROUTE - Nested under admin */}
+            <Route path="placements" element={<PlacementPanel />} />
           </Route>
 
           {/* Teacher Routes */}
@@ -87,6 +90,7 @@ export default function App() {
             <Route path="evaluations" element={<Evaluations />} />
           </Route>
 
+          {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
