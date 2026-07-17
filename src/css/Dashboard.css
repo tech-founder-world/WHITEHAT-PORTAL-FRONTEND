@@ -1,10 +1,22 @@
 /* ===== DASHBOARD CSS ===== */
+/* Only dashboard page specific styles */
 
 .dashboard {
   animation: fadeIn 0.3s ease;
 }
 
-/* ===== QUICK ACTIONS ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Quick Actions - already in global but keeping dashboard specific */
 .quick-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -70,28 +82,4 @@
   transform: translateX(0);
 }
 
-/* ===== SUBJECT TAGS ===== */
-.card-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--gray-600);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-}
-
-.subject-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.subject-tag {
-  background: var(--primary-bg);
-  color: var(--primary);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: 1px solid rgba(232,71,10,0.2);
-}
+/* Stats Cards - already in global */

@@ -1,12 +1,11 @@
 /* ===== MANAGE STUDENTS CSS ===== */
+/* Only student management specific styles */
 
-.roll-badge {
-  display: inline-block;
-  background: var(--gray-100);
-  color: var(--gray-800);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-family: monospace;
+/* Student specific styles */
+.subject-tags-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
+
+/* Any student-specific overrides */

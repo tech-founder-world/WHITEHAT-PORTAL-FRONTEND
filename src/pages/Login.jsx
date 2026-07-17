@@ -120,7 +120,7 @@ export default function Login() {
             </svg>
           </div>
           <div className="logo-text">
-            <span className="logo-main">White Head</span>
+            <span className="logo-main">White Hat</span>
             <span className="logo-sub">Coders</span>
           </div>
         </div>
@@ -198,7 +198,7 @@ export default function Login() {
             <div className="login-card-header">
               <span className="greeting-badge">👋 Welcome back</span>
               <h2>Sign in to your account</h2>
-              <p>Access your dashboard and manage attendance with ease</p>
+              <p>Access your dashboard </p>
             </div>
 
             {/* Error Message */}
@@ -226,7 +226,7 @@ export default function Login() {
                   <input
                     className="form-control"
                     type="email"
-                    placeholder="you@school.com"
+                    placeholder="user address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -262,21 +262,6 @@ export default function Login() {
                     {showPassword ? "🙈" : "👁️"}
                   </button>
                 </div>
-              </div>
-
-              {/* Options */}
-              <div className="form-options">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span>Remember me</span>
-                </label>
-                <a href="#" className="forgot-password">
-                  Forgot password?
-                </a>
               </div>
 
               {/* Submit Button */}
