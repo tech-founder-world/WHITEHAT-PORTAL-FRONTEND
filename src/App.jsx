@@ -12,7 +12,8 @@ import MarkAttendance from "./pages/MarkAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import Evaluations from "./pages/Evaluations";
 import Layout from "./components/Layout";
-import PlacementPanel from "./components/PlacementPanel"; // ✅ Fixed import path
+import PlacementPanel from "./components/PlacementPanel";
+import TeacherProjects from "./pages/TeacherProjects"; // ✅ Fixed: Only one import
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -70,6 +71,7 @@ export default function App() {
           >
             <Route index element={<TeacherDashboard />} />
             <Route path="mark-attendance" element={<MarkAttendance />} />
+            <Route path="projects" element={<TeacherProjects />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="students" element={<ManageStudents />} />
             <Route path="history" element={<AttendanceHistory />} />

@@ -41,117 +41,121 @@ export default function Layout() {
 
   // Get navigation items based on role
   const getNavItems = () => {
-  if (user?.role === "admin") {
-    return [
-      {
-        path: "/admin",
-        label: "Dashboard",
-        icon: "📊",
-        description: "Overview",
-      },
-      {
-        path: "/admin/teachers",
-        label: "Teachers",
-        icon: "👩‍🏫",
-        description: "Manage teachers",
-      },
-      {
-        path: "/admin/counsellors",
-        label: "Counsellors",
-        icon: "🧑‍🏫",
-        description: "Manage counsellors",
-      },
-      {
-        path: "/admin/students",
-        label: "Students",
-        icon: "🎓",
-        description: "Manage students",
-      },
-      {
-        path: "/admin/attendance",
-        label: "Attendance",
-        icon: "📋",
-        description: "View records",
-      },
-      {
-        path: "/admin/evaluations",
-        label: "Evaluations",
-        icon: "📝",
-        description: "Manage evaluations",
-      },
-      // ✅ ADD PLACEMENT MENU ITEM
-      {
-        path: "/admin/placements",
-        label: "Placements",
-        icon: "💼",
-        description: "Manage placements",
-      },
-    ];
-  } else if (user?.role === "counsellor") {
-    return [
-      // ... existing counsellor routes
-      {
-        path: "/counsellor",
-        label: "Dashboard",
-        icon: "📊",
-        description: "Overview",
-      },
-      {
-        path: "/counsellor/students",
-        label: "Students",
-        icon: "🎓",
-        description: "Assigned students",
-      },
-      {
-        path: "/counsellor/history",
-        label: "History",
-        icon: "📋",
-        description: "Attendance history",
-      },
-      {
-        path: "/counsellor/evaluations",
-        label: "Evaluations",
-        icon: "📝",
-        description: "Student evaluations",
-      },
-    ];
-  } else {
-    // Teacher
-    return [
-      // ... existing teacher routes
-      {
-        path: "/teacher",
-        label: "Dashboard",
-        icon: "📊",
-        description: "Overview",
-      },
-      {
-        path: "/teacher/mark-attendance",
-        label: "Mark Attendance",
-        icon: "✅",
-        description: "Mark today's attendance",
-      },
-      {
-        path: "/teacher/students",
-        label: "Students",
-        icon: "🎓",
-        description: "View students",
-      },
-      {
-        path: "/teacher/history",
-        label: "History",
-        icon: "📋",
-        description: "Attendance history",
-      },
-      {
-        path: "/teacher/evaluations",
-        label: "Evaluations",
-        icon: "📝",
-        description: "Manage evaluations",
-      },
-    ];
-  }
-};
+    if (user?.role === "admin") {
+      return [
+        {
+          path: "/admin",
+          label: "Dashboard",
+          icon: "📊",
+          description: "Overview",
+        },
+        {
+          path: "/admin/teachers",
+          label: "Teachers",
+          icon: "👩‍🏫",
+          description: "Manage teachers",
+        },
+        {
+          path: "/admin/counsellors",
+          label: "Counsellors",
+          icon: "🧑‍🏫",
+          description: "Manage counsellors",
+        },
+        {
+          path: "/admin/students",
+          label: "Students",
+          icon: "🎓",
+          description: "Manage students",
+        },
+        {
+          path: "/admin/attendance",
+          label: "Attendance",
+          icon: "📋",
+          description: "View records",
+        },
+        {
+          path: "/admin/evaluations",
+          label: "Evaluations",
+          icon: "📝",
+          description: "Manage evaluations",
+        },
+        // ✅ ADD PLACEMENT MENU ITEM HERE
+        {
+          path: "/admin/placements",
+          label: "Placements",
+          icon: "💼",
+          description: "Manage placements",
+        },
+      ];
+    } else if (user?.role === "counsellor") {
+      return [
+        {
+          path: "/counsellor",
+          label: "Dashboard",
+          icon: "📊",
+          description: "Overview",
+        },
+        {
+          path: "/counsellor/students",
+          label: "Students",
+          icon: "🎓",
+          description: "Assigned students",
+        },
+        {
+          path: "/counsellor/history",
+          label: "History",
+          icon: "📋",
+          description: "Attendance history",
+        },
+        {
+          path: "/counsellor/evaluations",
+          label: "Evaluations",
+          icon: "📝",
+          description: "Student evaluations",
+        },
+      ];
+    } else {
+      // Teacher
+      return [
+        {
+          path: "/teacher",
+          label: "Dashboard",
+          icon: "📊",
+          description: "Overview",
+        },
+        {
+          path: "/teacher/mark-attendance",
+          label: "Mark Attendance",
+          icon: "✅",
+          description: "Mark today's attendance",
+        },
+        {
+          path: "/teacher/students",
+          label: "Students",
+          icon: "🎓",
+          description: "View students",
+        },
+        {
+          path: "/teacher/history",
+          label: "History",
+          icon: "📋",
+          description: "Attendance history",
+        },
+        {
+          path: "/teacher/evaluations",
+          label: "Evaluations",
+          icon: "📝",
+          description: "Manage evaluations",
+        },
+        {
+          path: "/teacher/projects",
+          label: "Projects",
+          icon: "📁",
+          description: "Manage projects",
+        },
+      ];
+    }
+  };
 
   const navItems = getNavItems();
 
@@ -181,7 +185,7 @@ export default function Layout() {
         </button>
         <div className="mobile-logo">
           <span className="logo-icon">🏫</span>
-          <span className="logo-text">WhiteHead</span>
+          <span className="logo-text">WhiteHat</span>
         </div>
         <div className="mobile-user">
           <div className="mobile-avatar" style={{ background: roleColor }}>
