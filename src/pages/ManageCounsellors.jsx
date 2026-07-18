@@ -7,18 +7,17 @@ const emptyForm = {
   email: "",
   password: "",
   specialization: "",
-  students: [],
 };
 
 export default function ManageCounsellors() {
   const [counsellors, setCounsellors] = useState([]);
-  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [expandedCounsellor, setExpandedCounsellor] = useState(null);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -28,12 +27,8 @@ export default function ManageCounsellors() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [counsellorsRes, studentsRes] = await Promise.all([
-        api.get("/admin/counsellors"),
-        api.get("/students"),
-      ]);
+      const counsellorsRes = await api.get("/admin/counsellors");
       setCounsellors(counsellorsRes.data);
-      setStudents(studentsRes.data);
     } catch (err) {
       console.error(err);
       showToast("Error loading data", "error");
@@ -58,19 +53,9 @@ export default function ManageCounsellors() {
       email: c.email,
       password: "",
       specialization: c.specialization || "",
-      students: c.students?.map((s) => s._id) || [],
     });
     setEditId(c._id);
     setShowModal(true);
-  };
-
-  const toggleStudent = (studentId) => {
-    setForm((prev) => ({
-      ...prev,
-      students: prev.students.includes(studentId)
-        ? prev.students.filter((id) => id !== studentId)
-        : [...prev.students, studentId],
-    }));
   };
 
   const handleSave = async () => {
@@ -85,7 +70,6 @@ export default function ManageCounsellors() {
         name: form.name,
         email: form.email,
         specialization: form.specialization,
-        students: form.students,
         ...(form.password && { password: form.password }),
       };
 
@@ -120,14 +104,10 @@ export default function ManageCounsellors() {
     }
   };
 
-  // Get assigned student names
-  const getAssignedStudentNames = (studentIds) => {
-    if (!studentIds || studentIds.length === 0) return "No students assigned";
-    const names = studentIds.map((id) => {
-      const student = students.find((s) => s._id === id);
-      return student ? student.name : "Unknown";
-    });
-    return names.join(", ");
+  const toggleExpand = (counsellorId) => {
+    setExpandedCounsellor(
+      expandedCounsellor === counsellorId ? null : counsellorId,
+    );
   };
 
   return (
@@ -145,7 +125,7 @@ export default function ManageCounsellors() {
         <div>
           <h1 className="page-title">Counsellors</h1>
           <p className="page-subtitle">
-            Manage counsellor accounts and their assigned students
+            Manage counsellor accounts - Counsellors will add their own students
           </p>
         </div>
         <button className="btn btn-primary" onClick={openAdd}>
@@ -173,7 +153,7 @@ export default function ManageCounsellors() {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Specialization</th>
-                  <th>Assigned Students</th>
+                  <th>Students Added</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -196,16 +176,13 @@ export default function ManageCounsellors() {
                       </span>
                     </td>
                     <td>
-                      <div className="assigned-students-cell">
-                        {c.students && c.students.length > 0 ? (
-                          <span className="student-count-badge">
-                            {c.students.length} student
-                            {c.students.length !== 1 ? "s" : ""}
-                          </span>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </div>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => toggleExpand(c._id)}
+                      >
+                        {c.students?.length || 0} Students{" "}
+                        {expandedCounsellor === c._id ? "▲" : "▼"}
+                      </button>
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: "6px" }}>
@@ -227,16 +204,76 @@ export default function ManageCounsellors() {
                 ))}
               </tbody>
             </table>
+
+            {/* Expanded student list for each counsellor */}
+            {expandedCounsellor && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "16px",
+                  background: "var(--gray-50)",
+                  borderRadius: "var(--border-radius)",
+                }}
+              >
+                <h4 style={{ marginBottom: "12px" }}>
+                  Students added by{" "}
+                  {counsellors.find((c) => c._id === expandedCounsellor)?.name}
+                </h4>
+                {counsellors.find((c) => c._id === expandedCounsellor)?.students
+                  ?.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(200px, 1fr))",
+                      gap: "8px",
+                    }}
+                  >
+                    {counsellors
+                      .find((c) => c._id === expandedCounsellor)
+                      ?.students.map((student) => (
+                        <div
+                          key={student._id}
+                          style={{
+                            padding: "8px 12px",
+                            background: "var(--white)",
+                            borderRadius: "6px",
+                            border: "1px solid var(--gray-200)",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>{student.name}</span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--gray-500)",
+                            }}
+                          >
+                            {student.rollNumber}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p style={{ color: "var(--gray-500)", fontSize: "13px" }}>
+                    No students added yet
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {/* Modal - Removed student assignment */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
             className="modal"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "560px" }}
+            style={{ maxWidth: "480px" }}
           >
             <div className="modal-header">
               <h3 className="modal-title">
@@ -296,44 +333,18 @@ export default function ManageCounsellors() {
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Assign Students</label>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "var(--text-muted)",
-                  marginBottom: "8px",
-                }}
-              >
-                Select students this counsellor will be responsible for
-              </p>
-
-              {students.length === 0 ? (
-                <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                  No students available. Add students first.
-                </p>
-              ) : (
-                <div className="student-select-grid">
-                  {students.map((student) => (
-                    <label key={student._id} className="student-checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={form.students.includes(student._id)}
-                        onChange={() => toggleStudent(student._id)}
-                      />
-                      <span>{student.name}</span>
-                      <span className="roll-number">{student.rollNumber}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {form.students.length > 0 && (
-                <div className="selected-count">
-                  Selected: <strong>{form.students.length}</strong> student
-                  {form.students.length !== 1 ? "s" : ""}
-                </div>
-              )}
+            <div
+              style={{
+                padding: "12px",
+                background: "var(--info-bg)",
+                borderRadius: "var(--border-radius)",
+                marginBottom: "16px",
+                fontSize: "13px",
+                color: "var(--info)",
+              }}
+            >
+              ℹ️ Counsellors will add their own students. They cannot be
+              assigned students by admin.
             </div>
 
             <div className="form-actions">

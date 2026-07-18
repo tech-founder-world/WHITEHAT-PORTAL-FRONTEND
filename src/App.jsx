@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminProjects from "./pages/AdminProjects"; // Add this import
 import TeacherDashboard from "./pages/TeacherDashboard";
 import CounsellorDashboard from "./pages/CounsellorDashboard";
 import ManageTeachers from "./pages/ManageTeachers";
@@ -12,8 +13,7 @@ import MarkAttendance from "./pages/MarkAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import Evaluations from "./pages/Evaluations";
 import Layout from "./components/Layout";
-import PlacementPanel from "./components/PlacementPanel";
-import TeacherProjects from "./pages/TeacherProjects"; // ✅ Fixed: Only one import
+import TeacherProjects from "./pages/TeacherProjects";
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -54,6 +54,8 @@ export default function App() {
             <Route path="teachers" element={<ManageTeachers />} />
             <Route path="counsellors" element={<ManageCounsellors />} />
             <Route path="students" element={<ManageStudents />} />
+            <Route path="projects" element={<AdminProjects />} />{" "}
+            {/* Add this */}
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="attendance" element={<AttendanceHistory />} />
             {/* ✅ PLACEMENT ROUTE - Nested under admin */}
@@ -90,6 +92,7 @@ export default function App() {
             <Route path="students" element={<ManageStudents />} />
             <Route path="history" element={<AttendanceHistory />} />
             <Route path="evaluations" element={<Evaluations />} />
+            <Route path="batches" element={<CounsellorBatches />} />
           </Route>
 
           {/* Catch all - redirect to home */}
