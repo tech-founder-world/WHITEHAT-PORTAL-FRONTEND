@@ -14,6 +14,10 @@ import AttendanceHistory from "./pages/AttendanceHistory";
 import Evaluations from "./pages/Evaluations";
 import Layout from "./components/Layout";
 import TeacherProjects from "./pages/TeacherProjects";
+import CounsellorBatches from './pages/CounsellorBatches'
+import Placement from "./pages/Placement";
+import StudentPlacementForm from './components/StudentPlacementForm';
+
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -59,7 +63,7 @@ export default function App() {
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="attendance" element={<AttendanceHistory />} />
             {/* ✅ PLACEMENT ROUTE - Nested under admin */}
-            <Route path="placements" element={<PlacementPanel />} />
+            <Route path="placements" element={<Placement />} />
           </Route>
 
           {/* Teacher Routes */}
@@ -97,6 +101,7 @@ export default function App() {
 
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/apply/:formLink" element={<StudentPlacementForm />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

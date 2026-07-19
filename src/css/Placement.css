@@ -1,0 +1,363 @@
+/* src/css/Placement.css */
+
+.placement-page {
+  padding: 30px;
+  background-color: #f9fafb; /* Light gray background */
+  min-height: 100vh;
+}
+
+.placement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.placement-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.placement-subtitle {
+  color: #6b7280;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+/* Create Button */
+.create-btn {
+  background: #f97316;
+  color: white;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+  font-size: 15px;
+}
+
+.create-btn:hover {
+  background: #ea580c;
+}
+
+/* Search Bar */
+.search-box {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  outline: none;
+  font-size: 15px;
+  background: white;
+  transition: border 0.2s;
+}
+
+.search-box:focus {
+  border-color: #f97316;
+}
+
+/* Table Container */
+.table-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+}
+
+.placement-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.placement-table th {
+  background: #f3f4f6;
+  text-align: left;
+  padding: 16px 20px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.placement-table td {
+  padding: 16px 20px;
+  border-top: 1px solid #f3f4f6;
+  color: #1f2937;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+/* Modal Box */
+.modal {
+  background: white;
+  width: 700px;
+  max-width: 95%;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 25px;
+  margin-top: 0;
+}
+
+/* Modal Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.form-grid input,
+.modal textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  transition: border 0.2s;
+  font-family: inherit;
+}
+
+.form-grid input:focus,
+.modal textarea:focus {
+  border-color: #f97316;
+}
+
+.modal textarea {
+  margin-top: 15px;
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.cancel-btn {
+  padding: 10px 22px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #4b5563;
+  transition: 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #f3f4f6;
+}
+
+.save-btn {
+  padding: 10px 24px;
+  border: none;
+  background: #f97316;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.save-btn:hover {
+  background: #ea580c;
+}
+
+.save-btn:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .placement-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================== */
+/* --- NEW: VIEW APPLICANTS MODAL STYLES --- */
+/* =========================================== */
+
+/* Custom Modal Overlay */
+.modal-applicants-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+/* Modal Container */
+.modal-applicants-content {
+  background: #ffffff;
+  width: 95%;
+  max-width: 1000px;
+  max-height: 85vh;
+  border-radius: 16px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.modal-applicants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.modal-applicants-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-applicants-header h3 span {
+  color: #f97316;
+}
+
+.modal-applicants-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s;
+  line-height: 1;
+}
+
+.modal-applicants-close:hover {
+  color: #1f2937;
+}
+
+/* Scrollable Body */
+.modal-applicants-body {
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 5px;
+}
+
+/* Table Styles inside Modal */
+.modal-applicants-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.modal-applicants-table thead tr {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.modal-applicants-table th {
+  text-align: left;
+  padding: 14px 16px;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.modal-applicants-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.modal-applicants-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.modal-applicants-table td {
+  padding: 14px 16px;
+  color: #1f2937;
+}
+
+.modal-applicants-table .student-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.modal-applicants-table .student-email {
+  color: #4b5563;
+}
+
+/* Branch Badge Pill */
+.branch-pill {
+  display: inline-block;
+  background: #fefcbf;
+  color: #854d0e;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Empty State Text */
+.modal-empty-state {
+  color: #9ca3af;
+  text-align: center;
+  padding: 50px 0;
+  font-size: 16px;
+}

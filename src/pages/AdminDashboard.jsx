@@ -11,13 +11,14 @@ export default function AdminDashboard() {
     students: 0,
     todayRecords: 0,
     projects: 0,
+    placements:0,
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [teachersRes, studentsRes, attendanceRes, projectsRes] =
+        const [teachersRes, studentsRes, attendanceRes, projectsRes, placementsRes] =
           await Promise.all([
             api.get("/admin/teachers"),
             api.get("/students"),
@@ -25,12 +26,14 @@ export default function AdminDashboard() {
               `/attendance?date=${new Date().toISOString().split("T")[0]}`,
             ),
             api.get("/projects"),
+            api.get("/placement/all"), // <-- ADD THIS LINE
           ]);
         setStats({
           teachers: teachersRes.data.length,
           students: studentsRes.data.length,
           todayRecords: attendanceRes.data.length,
           projects: projectsRes.data.length,
+          placements: placementsRes.data.length, // <-- ADD THIS
         });
       } catch (err) {
         console.error(err);
@@ -71,6 +74,10 @@ export default function AdminDashboard() {
         <div className="stat-card" style={{ borderLeft: "4px solid #667eea" }}>
           <div className="stat-label">Total Projects</div>
           <div className="stat-value">{loading ? "—" : stats.projects}</div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #f97316" }}>
+          <div className="stat-label">Total Placements</div>
+          <div className="stat-value">{loading ? "—" : stats.placements}</div>
         </div>
       </div>
 
