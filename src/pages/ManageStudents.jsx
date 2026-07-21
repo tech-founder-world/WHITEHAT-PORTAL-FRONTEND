@@ -5,12 +5,12 @@ import "../css/ManageStudents.css";
 
 const emptyForm = {
   name: "",
-  rollNumber: "",
+  fatherName: "",
   email: "",
-  subjects: [],
   phone: "",
-  class: "",
-  section: "",
+  subjects: [],
+  totalFee: 0,
+  paidAmount: 0,
 };
 
 export default function ManageStudents() {
@@ -41,7 +41,7 @@ export default function ManageStudents() {
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 5000);
   };
 
   const fetchAll = async () => {
@@ -116,7 +116,9 @@ export default function ManageStudents() {
         const matchSearch =
           !q ||
           s.name.toLowerCase().includes(q) ||
-          s.rollNumber.toLowerCase().includes(q) ||
+          s.email?.toLowerCase().includes(q) ||
+          s.fatherName?.toLowerCase().includes(q) ||
+          s.phone?.includes(q) ||
           (s.subjects || []).some((sub) => sub.toLowerCase().includes(q));
         return matchSubject && matchAddedBy && matchSearch;
       }),
@@ -134,13 +136,13 @@ export default function ManageStudents() {
   const openEdit = (s) => {
     if (!canAddStudents) return;
     setForm({
-      name: s.name,
-      rollNumber: s.rollNumber,
+      name: s.name || "",
+      fatherName: s.fatherName || "",
       email: s.email || "",
-      subjects: s.subjects || [],
       phone: s.phone || "",
-      class: s.class || "",
-      section: s.section || "",
+      subjects: s.subjects || [],
+      totalFee: s.totalFee || 0,
+      paidAmount: s.paidAmount || 0,
     });
     setSubjectInput("");
     setEditId(s._id);
@@ -176,30 +178,64 @@ export default function ManageStudents() {
     }));
 
   const handleSave = async () => {
-    if (!form.name || !form.rollNumber)
-      return showToast("Name and roll number required", "error");
+    if (!form.name || !form.fatherName || !form.email || !form.phone) {
+      return showToast(
+        "Name, father's name, email, and phone are required",
+        "error",
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      return showToast("Please enter a valid email address", "error");
+    }
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(form.phone)) {
+      return showToast("Please enter a valid 10-digit phone number", "error");
+    }
+
     setSaving(true);
     try {
+      const cleanEmail = form.email.trim().toLowerCase();
+
+      const existingStudent = students.find(
+        (s) => s.email?.toLowerCase() === cleanEmail && s._id !== editId,
+      );
+
+      if (existingStudent) {
+        showToast(
+          `Email "${cleanEmail}" already exists for student "${existingStudent.name}". Please use a different email.`,
+          "error",
+        );
+        setSaving(false);
+        return;
+      }
+
       const payload = {
-        name: form.name,
-        rollNumber: form.rollNumber,
-        email: form.email,
+        name: form.name.trim(),
+        fatherName: form.fatherName.trim(),
+        email: cleanEmail,
+        phone: form.phone.trim(),
         subjects: form.subjects,
-        phone: form.phone,
-        class: form.class,
-        section: form.section,
+        totalFee: form.totalFee || 0,
+        paidAmount: form.paidAmount || 0,
       };
+
+      let response;
       if (editId) {
-        await api.put(`/students/${editId}`, payload);
-        showToast("Student updated");
+        response = await api.put(`/students/${editId}`, payload);
+        showToast(response.data.message || "Student updated successfully");
       } else {
-        await api.post("/students", payload);
-        showToast("Student added");
+        response = await api.post("/students", payload);
+        showToast(response.data.message || "Student added successfully");
       }
       setShowModal(false);
       fetchAll();
     } catch (err) {
-      showToast(err.response?.data?.message || "Error saving student", "error");
+      console.error("Error saving student:", err);
+      let errorMessage = err.response?.data?.message || "Error saving student";
+      showToast(errorMessage, "error");
     } finally {
       setSaving(false);
     }
@@ -236,7 +272,87 @@ export default function ManageStudents() {
     }
   };
 
-  // Get unique list of users who added students
+  // 🆕 Export Functions
+  const exportSingleCSV = async (student) => {
+    try {
+      const response = await api.get(`/export/student/${student._id}/csv`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${student.name}_data.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded ${student.name}'s data as CSV`, "success");
+    } catch (err) {
+      console.error("Error exporting CSV:", err);
+      showToast("Error exporting CSV", "error");
+    }
+  };
+
+  const exportSinglePDF = async (student) => {
+    try {
+      const response = await api.get(`/export/student/${student._id}/pdf`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${student.name}_data.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded ${student.name}'s data as PDF`, "success");
+    } catch (err) {
+      console.error("Error exporting PDF:", err);
+      showToast("Error exporting PDF", "error");
+    }
+  };
+
+  const exportAllCSV = async () => {
+    try {
+      const response = await api.get("/export/all-students/csv", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "all_students_data.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded all students data as CSV`, "success");
+    } catch (err) {
+      console.error("Error exporting all CSV:", err);
+      showToast("Error exporting all CSV", "error");
+    }
+  };
+
+  const exportAllPDF = async () => {
+    try {
+      const response = await api.get("/export/all-students/pdf", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "all_students_report.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded all students report as PDF`, "success");
+    } catch (err) {
+      console.error("Error exporting all PDF:", err);
+      showToast("Error exporting all PDF", "error");
+    }
+  };
+
   const addedByOptions = [
     ...new Set(students.map((s) => s.addedBy?._id).filter(Boolean)),
   ].map((id) => {
@@ -258,6 +374,8 @@ export default function ManageStudents() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: "10px",
         }}
       >
         <div>
@@ -271,11 +389,32 @@ export default function ManageStudents() {
               `Students enrolled in your subject${(user?.subjects || []).length !== 1 ? "s" : ""}: ${(user?.subjects || []).join(", ")}`}
           </p>
         </div>
-        {canAddStudents && (
-          <button className="btn btn-primary" onClick={openAdd}>
-            + Add Student
-          </button>
-        )}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {/* 🆕 Export All Buttons */}
+          {(isAdmin || isTeacher || isCounsellor) && students.length > 0 && (
+            <>
+              <button
+                className="btn btn-success btn-sm"
+                onClick={exportAllCSV}
+                style={{ background: "#059669", color: "white" }}
+              >
+                📥 CSV All
+              </button>
+              <button
+                className="btn btn-success btn-sm"
+                onClick={exportAllPDF}
+                style={{ background: "#2563eb", color: "white" }}
+              >
+                📄 PDF All
+              </button>
+            </>
+          )}
+          {canAddStudents && (
+            <button className="btn btn-primary" onClick={openAdd}>
+              + Add Student
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card">
@@ -292,7 +431,7 @@ export default function ManageStudents() {
         >
           <input
             className="form-control"
-            placeholder="🔍 Search by name, roll no, or subject..."
+            placeholder="🔍 Search by name, email, father name, or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ maxWidth: "280px" }}
@@ -314,7 +453,6 @@ export default function ManageStudents() {
             </select>
           )}
 
-          {/* Admin filter for "Added By" */}
           {isAdmin && addedByOptions.length > 0 && (
             <select
               className="form-control"
@@ -379,32 +517,27 @@ export default function ManageStudents() {
             <table>
               <thead>
                 <tr>
-                  <th>Roll No.</th>
                   <th>Name</th>
+                  <th>Father's Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
                   <th>Enrolled Subjects</th>
+                  <th>Fee Details</th>
                   <th>Added By</th>
                   <th>Created Date</th>
                   {isAdmin && <th>Assigned Teacher</th>}
-                  {canAddStudents && <th>Actions</th>}
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((s) => (
                   <tr key={s._id}>
                     <td>
-                      <span className="roll-badge">{s.rollNumber}</span>
-                    </td>
-                    <td>
                       <strong>{s.name}</strong>
-                      {s.class && (
-                        <div
-                          style={{ fontSize: "11px", color: "var(--gray-500)" }}
-                        >
-                          Class: {s.class}
-                          {s.section ? `-${s.section}` : ""}
-                        </div>
-                      )}
                     </td>
+                    <td>{s.fatherName || "N/A"}</td>
+                    <td>{s.email}</td>
+                    <td>{s.phone}</td>
                     <td>
                       <div className="subject-tags-inline">
                         {(s.subjects || []).length > 0 ? (
@@ -430,6 +563,31 @@ export default function ManageStudents() {
                     </td>
                     <td>
                       <div style={{ fontSize: "13px" }}>
+                        <div>
+                          <span style={{ fontWeight: "600" }}>Total:</span> ₹
+                          {s.totalFee || 0}
+                        </div>
+                        <div>
+                          <span style={{ fontWeight: "600", color: "#16a34a" }}>
+                            Paid:
+                          </span>{" "}
+                          ₹{s.paidAmount || 0}
+                        </div>
+                        <div>
+                          <span
+                            style={{
+                              fontWeight: "600",
+                              color: s.dueAmount > 0 ? "#dc2626" : "#16a34a",
+                            }}
+                          >
+                            Due:
+                          </span>
+                          ₹{s.dueAmount || 0}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: "13px" }}>
                         <div>{s.addedBy?.name || "Unknown"}</div>
                         <div
                           style={{ fontSize: "11px", color: "var(--gray-500)" }}
@@ -444,8 +602,6 @@ export default function ManageStudents() {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
                           })
                         : "—"}
                     </td>
@@ -470,32 +626,63 @@ export default function ManageStudents() {
                         )}
                       </td>
                     )}
-                    {canAddStudents && (
-                      <td>
-                        <div
+                    <td>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "4px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {/* 🆕 Export buttons for each student */}
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={() => exportSingleCSV(s)}
                           style={{
-                            display: "flex",
-                            gap: "6px",
-                            flexWrap: "wrap",
+                            padding: "2px 8px",
+                            fontSize: "11px",
+                            background: "#059669",
+                            color: "white",
                           }}
+                          title="Download CSV"
                         >
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => openEdit(s)}
-                          >
-                            Edit
-                          </button>
-                          {isAdmin && (
+                          📥 CSV
+                        </button>
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={() => exportSinglePDF(s)}
+                          style={{
+                            padding: "2px 8px",
+                            fontSize: "11px",
+                            background: "#2563eb",
+                            color: "white",
+                          }}
+                          title="Download PDF"
+                        >
+                          📄 PDF
+                        </button>
+                        {canAddStudents && (
+                          <>
                             <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleDelete(s._id, s.name)}
+                              className="btn btn-outline btn-sm"
+                              onClick={() => openEdit(s)}
+                              style={{ padding: "2px 8px", fontSize: "11px" }}
                             >
-                              Remove
+                              Edit
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
+                            {isAdmin && (
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleDelete(s._id, s.name)}
+                                style={{ padding: "2px 8px", fontSize: "11px" }}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -504,7 +691,7 @@ export default function ManageStudents() {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal - Keep as is */}
       {canAddStudents && showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -535,25 +722,41 @@ export default function ManageStudents() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Roll Number *</label>
+              <label className="form-label">Father's Name *</label>
               <input
                 className="form-control"
-                placeholder="e.g. CS2024001"
-                value={form.rollNumber}
+                placeholder="e.g. Mr. Suresh Verma"
+                value={form.fatherName}
                 onChange={(e) =>
-                  setForm({ ...form, rollNumber: e.target.value })
+                  setForm({ ...form, fatherName: e.target.value })
                 }
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Email (optional)</label>
+              <label className="form-label">Email *</label>
               <input
                 className="form-control"
                 type="email"
                 placeholder="student@email.com"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, email: e.target.value });
+                }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Phone *</label>
+              <input
+                className="form-control"
+                placeholder="e.g. 9876543210"
+                value={form.phone}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  setForm({ ...form, phone: value });
+                }}
+                maxLength="10"
               />
             </div>
 
@@ -566,34 +769,56 @@ export default function ManageStudents() {
               }}
             >
               <div className="form-group">
-                <label className="form-label">Class</label>
+                <label className="form-label">Total Fee (₹)</label>
                 <input
+                  type="number"
                   className="form-control"
-                  placeholder="e.g. 10th"
-                  value={form.class}
-                  onChange={(e) => setForm({ ...form, class: e.target.value })}
+                  placeholder="e.g. 25000"
+                  value={form.totalFee}
+                  min="0"
+                  onChange={(e) => {
+                    const total = Number(e.target.value) || 0;
+                    setForm({
+                      ...form,
+                      totalFee: total,
+                    });
+                  }}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Section</label>
+                <label className="form-label">Paid Amount (₹)</label>
                 <input
+                  type="number"
                   className="form-control"
-                  placeholder="e.g. A"
-                  value={form.section}
-                  onChange={(e) =>
-                    setForm({ ...form, section: e.target.value })
-                  }
+                  placeholder="e.g. 12500"
+                  value={form.paidAmount}
+                  min="0"
+                  onChange={(e) => {
+                    const paid = Number(e.target.value) || 0;
+                    setForm({
+                      ...form,
+                      paidAmount: paid,
+                    });
+                  }}
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Phone</label>
+              <label className="form-label">Due Amount (₹)</label>
               <input
+                type="number"
                 className="form-control"
-                placeholder="e.g. 9876543210"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                value={(form.totalFee || 0) - (form.paidAmount || 0)}
+                disabled
+                style={{
+                  background: "#f3f4f6",
+                  fontWeight: "bold",
+                  color:
+                    (form.totalFee || 0) - (form.paidAmount || 0) > 0
+                      ? "#dc2626"
+                      : "#16a34a",
+                }}
               />
             </div>
 
