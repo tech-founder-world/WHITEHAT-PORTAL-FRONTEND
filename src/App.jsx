@@ -17,6 +17,7 @@ import TeacherProjects from "./pages/TeacherProjects";
 import CounsellorBatches from './pages/CounsellorBatches'
 import Placement from "./pages/Placement";
 import StudentPlacementForm from './components/StudentPlacementForm';
+import CounsellorTrack from "./pages/CounsellorTrack";
 
 
 function ProtectedRoute({ children, requiredRole }) {
@@ -97,6 +98,8 @@ export default function App() {
             <Route path="history" element={<AttendanceHistory />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="batches" element={<CounsellorBatches />} />
+            <Route path="track" element={<CounsellorTrack />} />
+            <Route path="placements" element={<Placement />} />
           </Route>
 
           {/* Catch all - redirect to home */}

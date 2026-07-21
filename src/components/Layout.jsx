@@ -68,7 +68,7 @@ export default function Layout() {
           description: "Manage students",
         },
         {
-          path: "/admin/projects", // Add this
+          path: "/admin/projects", 
           label: "Projects",
           icon: "📁",
           description: "Manage projects",
@@ -85,7 +85,6 @@ export default function Layout() {
           icon: "📝",
           description: "Manage evaluations",
         },
-        // ✅ ADD PLACEMENT MENU ITEM HERE
         {
           path: "/admin/placements",
           label: "Placements",
@@ -102,10 +101,17 @@ export default function Layout() {
           description: "Overview",
         },
         {
-          path: "/counsellor/batches", // Add this
+          path: "/counsellor/batches", 
           label: "Batches",
           icon: "📚",
           description: "Manage batches",
+        },
+        // ✅ ADDED: Counsellor can view Student Applications/Placements
+        {
+          path: "/counsellor/placements", 
+          label: "Student Applications",
+          icon: "📋",
+          description: "View student applications",
         },
         {
           path: "/counsellor/students",
@@ -113,18 +119,7 @@ export default function Layout() {
           icon: "🎓",
           description: "Assigned students",
         },
-        {
-          path: "/counsellor/history",
-          label: "History",
-          icon: "📋",
-          description: "Attendance history",
-        },
-        {
-          path: "/counsellor/evaluations",
-          label: "Evaluations",
-          icon: "📝",
-          description: "Student evaluations",
-        },
+        // 🗑️ REMOVED: History and Evaluations from Counsellor Menu
       ];
     } else {
       // Teacher

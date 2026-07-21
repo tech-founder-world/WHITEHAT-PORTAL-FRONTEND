@@ -361,3 +361,56 @@
   padding: 50px 0;
   font-size: 16px;
 }
+
+/* --- COURSE TYPE PILLS --- */
+.course-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.course-pill.silver {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.course-pill.platinum {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.course-pill.premium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* --- FEES BADGE STYLES --- */
+.fees-pending {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.fees-paid {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.due-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.due-badge.clear {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.due-badge.due {
+  background: #fee2e2;
+  color: #991b1b;
+}

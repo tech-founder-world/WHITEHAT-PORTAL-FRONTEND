@@ -1,3 +1,4 @@
+// src/components/StudentPlacementForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -10,16 +11,24 @@ export default function StudentPlacementForm() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
 
-  // Student Application Data
+  // Student Application Data (Hidden fields added to pass backend validation)
   const [formData, setFormData] = useState({
     studentName: '',
     studentEmail: '',
     studentPhone: '',
-    studentId: '',
     branch: '',
     year: '',
-    semester: '',
-    cgpa: '',
+    
+    // ✅ HIDDEN FIELDS (Added to satisfy backend, but never shown to student)
+    studentId: 'N/A',
+    semester: 'N/A',
+    cgpa: 0,
+
+    // New Training Fields
+    courseType: 'Silver',
+    fees: '',
+    batchTiming: '',
+
     skills: '',
     experience: '',
     resumeLink: ''
@@ -34,10 +43,10 @@ export default function StudentPlacementForm() {
           const data = await res.json();
           setPlacement(data);
         } else {
-          setMessage({ type: 'error', text: 'Placement form not found or has expired.' });
+          setMessage({ type: 'error', text: 'Form not found or has expired.' });
         }
       } catch (error) {
-        setMessage({ type: 'error', text: 'Error loading placement details.' });
+        setMessage({ type: 'error', text: 'Error loading form details.' });
       } finally {
         setLoading(false);
       }
@@ -65,12 +74,15 @@ export default function StudentPlacementForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Submission failed');
 
-      setMessage({ type: 'success', text: '✅ Application submitted successfully! Check your email for updates.' });
+      setMessage({ type: 'success', text: '✅ Registration submitted successfully!' });
       
-      // Clear form
+      // Clear form (keep hidden fields intact)
       setFormData({
-        studentName: '', studentEmail: '', studentPhone: '', studentId: '',
-        branch: '', year: '', semester: '', cgpa: '', skills: '', experience: '', resumeLink: ''
+        studentName: '', studentEmail: '', studentPhone: '',
+        branch: '', year: '',
+        studentId: 'N/A', semester: 'N/A', cgpa: 0,
+        courseType: 'Silver', fees: '', batchTiming: '',
+        skills: '', experience: '', resumeLink: ''
       });
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
@@ -80,7 +92,7 @@ export default function StudentPlacementForm() {
   };
 
   // --- LOADING STATE ---
-  if (loading) return <div style={{padding: '40px', textAlign: 'center', fontFamily: 'sans-serif'}}>Loading Placement Details...</div>;
+  if (loading) return <div style={{padding: '40px', textAlign: 'center', fontFamily: 'sans-serif'}}>Loading Form...</div>;
   
   // --- ERROR STATE ---
   if (message && message.type === 'error' && !placement) return <div style={{padding: '40px', textAlign: 'center', color: '#dc2626', fontFamily: 'sans-serif'}}>{message.text}</div>;
@@ -91,23 +103,21 @@ export default function StudentPlacementForm() {
       
       {/* Placement Details Header */}
       <div style={{background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', marginBottom: '30px'}}>
-        <h1 style={{margin: '0 0 5px 0', color: '#1f2937'}}>{placement?.companyName}</h1>
-        <h3 style={{margin: '0 0 15px 0', color: '#4b5563'}}>{placement?.jobRole}</h3>
+        <h1 style={{margin: '0 0 5px 0', color: '#1f2937'}}>{placement?.formTitle}</h1>
         <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap', color: '#6b7280', fontSize: '15px'}}>
-          <span>📍 {placement?.jobLocation || 'N/A'}</span>
-          <span>💰 {placement?.salaryPackage || 'N/A'}</span>
           <span>📅 Apply by: {placement?.expiryDate ? new Date(placement.expiryDate).toLocaleDateString() : 'Open'}</span>
         </div>
         <div style={{marginTop: '20px', padding: '15px', background: '#f9fafb', borderRadius: '8px'}}>
           <p style={{margin: '0 0 10px 0'}}><strong>Description:</strong><br/>{placement?.description || 'No description provided.'}</p>
-          <p style={{margin: '0'}}><strong>Eligibility:</strong><br/>{placement?.eligibilityCriteria || 'No specific criteria provided.'}</p>
         </div>
       </div>
 
       {/* Student Application Form */}
       <div style={{background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)'}}>
-        <h2 style={{marginTop: 0, color: '#1f2937'}}>📝 Apply Now</h2>
+        <h2 style={{marginTop: 0, color: '#1f2937'}}>📝 Register for Batch</h2>
         <form onSubmit={handleSubmit}>
+          
+          {/* --- PERSONAL INFO GRID --- */}
           <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
             <div style={{display: 'flex', flexDirection: 'column'}}>
               <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Full Name *</label>
@@ -122,10 +132,6 @@ export default function StudentPlacementForm() {
               <input type="tel" name="studentPhone" required value={formData.studentPhone} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
             </div>
             <div style={{display: 'flex', flexDirection: 'column'}}>
-              <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Student ID *</label>
-              <input type="text" name="studentId" required value={formData.studentId} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
-            </div>
-            <div style={{display: 'flex', flexDirection: 'column'}}>
               <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Branch *</label>
               <input type="text" name="branch" required value={formData.branch} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
             </div>
@@ -133,27 +139,53 @@ export default function StudentPlacementForm() {
               <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Current Year *</label>
               <input type="text" name="year" required value={formData.year} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
             </div>
-            <div style={{display: 'flex', flexDirection: 'column'}}>
-              <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Semester *</label>
-              <input type="text" name="semester" required value={formData.semester} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
-            </div>
-            <div style={{display: 'flex', flexDirection: 'column'}}>
-              <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>CGPA *</label>
-              <input type="number" step="0.01" name="cgpa" required value={formData.cgpa} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
+          </div>
+
+          {/* --- NEW TRAINING FIELDS SECTION --- */}
+          <div style={{ marginTop: '20px', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+            <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', color: '#1f2937' }}>Training Details</h3>
+            
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+              
+              {/* Batch Type (Dropdown) */}
+              <div style={{display: 'flex', flexDirection: 'column'}}>
+                <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Batch Type *</label>
+                <select name="courseType" required value={formData.courseType} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px', background: 'white'}}>
+                  <option value="Silver">Silver</option>
+                  <option value="Platinum">Platinum</option>
+                  <option value="Premium">Premium</option>
+                </select>
+              </div>
+
+              {/* Fees Structure (Number) */}
+              <div style={{display: 'flex', flexDirection: 'column'}}>
+                <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Fees Structure (₹) *</label>
+                <input type="number" name="fees" required min="0" placeholder="e.g. 25000" value={formData.fees} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
+              </div>
+
+              {/* Batch Timing */}
+              <div style={{display: 'flex', flexDirection: 'column', gridColumn: '1 / -1'}}>
+                <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Batch Timing</label>
+                <input type="text" name="batchTiming" placeholder="e.g. Monday - Friday, 6 PM to 8 PM" value={formData.batchTiming} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} />
+              </div>
+
             </div>
           </div>
 
-          <div style={{display: 'flex', flexDirection: 'column', marginTop: '15px'}}>
-            <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Skills (Comma separated)</label>
-            <input type="text" name="skills" value={formData.skills} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} placeholder="e.g., React, Python, Java" />
-          </div>
-          <div style={{display: 'flex', flexDirection: 'column', marginTop: '15px'}}>
-            <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Resume / Portfolio Link</label>
-            <input type="url" name="resumeLink" value={formData.resumeLink} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} placeholder="e.g., Google Drive link" />
-          </div>
-          <div style={{display: 'flex', flexDirection: 'column', marginTop: '15px'}}>
-            <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Previous Experience</label>
-            <textarea name="experience" rows="2" value={formData.experience} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px', fontFamily: 'inherit', resize: 'vertical'}} placeholder="Any relevant work experience..."></textarea>
+          {/* --- EXTRAS SECTION --- */}
+          <div style={{marginTop: '20px'}}>
+            <div style={{display: 'flex', flexDirection: 'column', marginTop: '15px'}}>
+              <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Skills (Comma separated)</label>
+              <input type="text" name="skills" value={formData.skills} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} placeholder="e.g., React, Python, Java" />
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', marginTop: '15px'}}>
+              <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Resume / Portfolio Link</label>
+              <input type="url" name="resumeLink" value={formData.resumeLink} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px'}} placeholder="e.g., Google Drive link" />
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', marginTop: '15px'}}>
+              <label style={{fontWeight: '600', fontSize: '14px', marginBottom: '5px'}}>Previous Experience</label>
+              <textarea name="experience" rows="2" value={formData.experience} onChange={handleChange} style={{padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '15px', fontFamily: 'inherit', resize: 'vertical'}} placeholder="Any relevant work experience..."></textarea>
+            </div>
           </div>
 
           {message && (
@@ -163,7 +195,7 @@ export default function StudentPlacementForm() {
           )}
 
           <button type="submit" disabled={submitting} style={{width: '100%', marginTop: '20px', padding: '14px', background: '#f97316', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: submitting ? 'not-allowed' : 'pointer', transition: '0.2s'}} onMouseEnter={(e) => e.target.style.background = '#ea580c'} onMouseLeave={(e) => e.target.style.background = '#f97316'}>
-            {submitting ? 'Submitting...' : '🚀 Submit Application'}
+            {submitting ? 'Submitting...' : '🚀 Register Now'}
           </button>
         </form>
       </div>

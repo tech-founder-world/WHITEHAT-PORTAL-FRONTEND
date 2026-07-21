@@ -6,9 +6,14 @@ import "../css/Batches.css";
 export default function CounsellorBatches() {
   const { user } = useAuth();
   const [batches, setBatches] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]); // Global student list
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  
+  // Modal States
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [showBatchDetailsModal, setShowBatchDetailsModal] = useState(false);
+  
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [form, setForm] = useState({
     name: "",
@@ -21,6 +26,7 @@ export default function CounsellorBatches() {
     maxStudents: 30,
     fee: 0,
   });
+  
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -43,29 +49,23 @@ export default function CounsellorBatches() {
 
   useEffect(() => {
     fetchData();
-    createDefaultBatches();
   }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const batchesRes = await api.get("/batches");
+      // Fetch both Batches AND All Students
+      const [batchesRes, studentsRes] = await Promise.all([
+        api.get("/batches"),
+        api.get("/students") // Assuming you have this backend route
+      ]);
       setBatches(batchesRes.data || []);
+      setAllStudents(studentsRes.data || []);
     } catch (err) {
       console.error("Error fetching data:", err);
       showToast("Error loading data", "error");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const createDefaultBatches = async () => {
-    try {
-      await api.get("/batches/default/create");
-      const res = await api.get("/batches");
-      setBatches(res.data || []);
-    } catch (err) {
-      console.error("Error creating default batches:", err);
     }
   };
 
@@ -82,7 +82,7 @@ export default function CounsellorBatches() {
       fee: 0,
     });
     setSelectedBatch(null);
-    setShowModal(true);
+    setShowBatchModal(true);
   };
 
   const openEditBatch = (batch) => {
@@ -98,7 +98,19 @@ export default function CounsellorBatches() {
       fee: batch.fee || 0,
     });
     setSelectedBatch(batch);
-    setShowModal(true);
+    setShowBatchModal(true);
+  };
+
+  // 🟢 Open the modal to view all students in this batch
+  const openBatchDetails = (batch) => {
+    setSelectedBatch(batch);
+    setShowBatchDetailsModal(true);
+  };
+
+  // 🟢 Open the modal to add students to this batch
+  const openAddStudents = (batch) => {
+    setSelectedBatch(batch);
+    setShowStudentModal(true);
   };
 
   const handleCategoryChange = (category) => {
@@ -139,8 +151,10 @@ export default function CounsellorBatches() {
         await api.post("/batches", payload);
         showToast("Batch created successfully");
       }
-      setShowModal(false);
-      fetchData();
+      
+      setShowBatchModal(false);
+      await fetchData();
+      
     } catch (err) {
       console.error("Error saving batch:", err);
       showToast(err.response?.data?.message || "Error saving batch", "error");
@@ -149,13 +163,36 @@ export default function CounsellorBatches() {
     }
   };
 
+  // 🟢 Add selected students to the batch (FIXED Data Collection)
+  const handleAddStudents = async () => {
+    try {
+      // Collect IDs from checked checkboxes using dataset
+      const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+      const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+
+      if (selectedIds.length === 0) {
+        showToast("Please select at least one student", "error");
+        return;
+      }
+
+      console.log("Sending student IDs to backend:", selectedIds);
+
+      const res = await api.put(`/batches/${selectedBatch._id}`, {
+        studentIds: selectedIds
+      });
+
+      console.log("Server response:", res.data);
+      showToast("Students added successfully");
+      setShowStudentModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error adding students:", err);
+      showToast(err.response?.data?.message || "Error adding students", "error");
+    }
+  };
+
   const handleDeleteBatch = async (id, name) => {
-    if (
-      !window.confirm(
-        `Delete batch "${name}"? This will remove all students from this batch.`,
-      )
-    )
-      return;
+    if (!window.confirm(`Delete batch "${name}"? This will remove all students from this batch.`)) return;
     try {
       await api.delete(`/batches/${id}`);
       showToast("Batch deleted");
@@ -194,14 +231,7 @@ export default function CounsellorBatches() {
     <div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
 
-      <div
-        className="page-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1 className="page-title">Batches</h1>
           <p className="page-subtitle">Create and manage student batches</p>
@@ -224,11 +254,7 @@ export default function CounsellorBatches() {
             <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
               Create your first batch to start organizing students
             </p>
-            <button
-              className="btn btn-primary"
-              onClick={openCreateBatch}
-              style={{ marginTop: "12px" }}
-            >
+            <button className="btn btn-primary" onClick={openCreateBatch} style={{ marginTop: "12px" }}>
               Create Batch
             </button>
           </div>
@@ -237,24 +263,15 @@ export default function CounsellorBatches() {
             {batches.map((batch) => {
               const category = getCategoryBadge(batch.category);
               return (
-                <div
-                  key={batch._id}
-                  className="batch-card"
-                  style={{ borderTop: `4px solid ${category.color}` }}
-                >
+                <div key={batch._id} className="batch-card" style={{ borderTop: `4px solid ${category.color}` }}>
                   <div className="batch-header">
                     <div>
                       <h3 className="batch-name">{batch.name}</h3>
-                      <span
-                        className="batch-category"
-                        style={{ color: category.color }}
-                      >
+                      <span className="batch-category" style={{ color: category.color }}>
                         {category.label}
                       </span>
                     </div>
-                    <span
-                      className={`batch-status status-${batch.status || "active"}`}
-                    >
+                    <span className={`batch-status status-${batch.status || "active"}`}>
                       {batch.status || "active"}
                     </span>
                   </div>
@@ -262,44 +279,26 @@ export default function CounsellorBatches() {
                   <div className="batch-details">
                     <div className="batch-info-row">
                       <span>⏱️ {getDurationDisplay(batch)}</span>
-                      <span>
-                        👥 {batch.students?.length || 0}/
-                        {batch.maxStudents || "∞"}
-                      </span>
+                      <span>👥 {batch.students?.length || 0}/{batch.maxStudents || "∞"}</span>
                     </div>
 
-                    {batch.description && (
-                      <p className="batch-desc">{batch.description}</p>
-                    )}
-
-                    {batch.startDate && (
-                      <div className="batch-dates">
-                        📅 {batch.startDate} → {batch.endDate || "Ongoing"}
-                      </div>
-                    )}
-
-                    {batch.fee > 0 && (
-                      <div className="batch-fee">💰 ₹{batch.fee}</div>
-                    )}
-
-                    {batch.project && (
-                      <div className="batch-project">
-                        📁 Project: {batch.project?.name || "N/A"}
-                      </div>
-                    )}
+                    {batch.description && <p className="batch-desc">{batch.description}</p>}
+                    {batch.startDate && <div className="batch-dates">📅 {batch.startDate} → {batch.endDate || "Ongoing"}</div>}
+                    {batch.fee > 0 && <div className="batch-fee">💰 ₹{batch.fee}</div>}
                   </div>
 
                   <div className="batch-actions">
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => openEditBatch(batch)}
-                    >
+                    {/* 🟢 NEW BUTTONS ADDED HERE */}
+                    <button className="btn btn-outline btn-sm" onClick={() => openBatchDetails(batch)}>
+                      👁️ View Students
+                    </button>
+                    <button className="btn btn-primary btn-sm" onClick={() => openAddStudents(batch)}>
+                      ➕ Add Students
+                    </button>
+                    <button className="btn btn-outline btn-sm" onClick={() => openEditBatch(batch)}>
                       Edit
                     </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDeleteBatch(batch._id, batch.name)}
-                    >
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDeleteBatch(batch._id, batch.name)}>
                       Delete
                     </button>
                   </div>
@@ -310,184 +309,166 @@ export default function CounsellorBatches() {
         )}
       </div>
 
-      {/* Batch Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "600px" }}
-          >
+      {/* --- CREATE/EDIT BATCH MODAL --- */}
+      {showBatchModal && (
+        <div className="modal-overlay" onClick={() => setShowBatchModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
             <div className="modal-header">
-              <h3 className="modal-title">
-                {selectedBatch ? "Edit Batch" : "Create New Batch"}
-              </h3>
-              <button
-                className="modal-close"
-                onClick={() => setShowModal(false)}
-              >
-                ×
-              </button>
+              <h3 className="modal-title">{selectedBatch ? "Edit Batch" : "Create New Batch"}</h3>
+              <button className="modal-close" onClick={() => setShowBatchModal(false)}>×</button>
             </div>
-
             <div className="form-group">
               <label className="form-label">Category *</label>
-              <select
-                className="form-control"
-                value={form.category}
-                onChange={(e) => handleCategoryChange(e.target.value)}
-              >
+              <select className="form-control" value={form.category} onChange={(e) => handleCategoryChange(e.target.value)}>
                 {categoryOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
-
             <div className="form-group">
               <label className="form-label">Batch Name *</label>
-              <input
-                className="form-control"
-                placeholder="e.g. MERN Stack Batch"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
+              <input className="form-control" placeholder="e.g. MERN Stack Batch" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
-
-            <div
-              className="form-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
+            <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div className="form-group">
                 <label className="form-label">Duration *</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  placeholder="e.g. 45"
-                  value={form.duration}
-                  min={1}
-                  onChange={(e) =>
-                    setForm({ ...form, duration: e.target.value })
-                  }
-                />
+                <input type="number" className="form-control" placeholder="e.g. 45" value={form.duration} min={1} onChange={(e) => setForm({ ...form, duration: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Duration Type</label>
-                <select
-                  className="form-control"
-                  value={form.durationType}
-                  onChange={(e) =>
-                    setForm({ ...form, durationType: e.target.value })
-                  }
-                >
+                <select className="form-control" value={form.durationType} onChange={(e) => setForm({ ...form, durationType: e.target.value })}>
                   <option value="days">Days</option>
                   <option value="months">Months</option>
                 </select>
               </div>
             </div>
-
             <div className="form-group">
               <label className="form-label">Description</label>
-              <textarea
-                className="form-control"
-                placeholder="Batch description..."
-                rows="2"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-              />
+              <textarea className="form-control" placeholder="Batch description..." rows="2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
-
-            <div
-              className="form-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
+            <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div className="form-group">
                 <label className="form-label">Start Date</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={form.startDate}
-                  onChange={(e) =>
-                    setForm({ ...form, startDate: e.target.value })
-                  }
-                />
+                <input type="date" className="form-control" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">End Date</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={form.endDate}
-                  onChange={(e) =>
-                    setForm({ ...form, endDate: e.target.value })
-                  }
-                />
+                <input type="date" className="form-control" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
               </div>
             </div>
-
-            <div
-              className="form-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
+            <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div className="form-group">
                 <label className="form-label">Max Students</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={form.maxStudents}
-                  min={1}
-                  onChange={(e) =>
-                    setForm({ ...form, maxStudents: parseInt(e.target.value) })
-                  }
-                />
+                <input type="number" className="form-control" value={form.maxStudents} min={1} onChange={(e) => setForm({ ...form, maxStudents: parseInt(e.target.value) })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Fee (₹)</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={form.fee}
-                  min={0}
-                  onChange={(e) =>
-                    setForm({ ...form, fee: parseInt(e.target.value) })
-                  }
-                />
+                <input type="number" className="form-control" value={form.fee} min={0} onChange={(e) => setForm({ ...form, fee: parseInt(e.target.value) })} />
               </div>
             </div>
-
             <div className="form-actions">
-              <button
-                className="btn btn-outline"
-                onClick={() => setShowModal(false)}
-              >
-                Cancel
+              <button className="btn btn-outline" onClick={() => setShowBatchModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleSaveBatch} disabled={saving}>
+                {saving ? "Saving..." : selectedBatch ? "Update Batch" : "Create Batch"}
               </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveBatch}
-                disabled={saving}
-              >
-                {saving
-                  ? "Saving..."
-                  : selectedBatch
-                    ? "Update Batch"
-                    : "Create Batch"}
-              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- ADD STUDENTS TO BATCH MODAL (FIXED CHECKBOXES) --- */}
+      {showStudentModal && selectedBatch && (
+        <div className="modal-overlay" onClick={() => setShowStudentModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Add Students to "{selectedBatch.name}"</h3>
+              <button className="modal-close" onClick={() => setShowStudentModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: "400px", overflowY: "auto" }}>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "12px" }}>
+                Select students to add to this batch.
+              </p>
+              {allStudents.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--text-muted)" }}>No students found in the system.</p>
+              ) : (
+                allStudents.map((student) => {
+                  const isAlreadyInBatch = selectedBatch.students?.some(s => s._id === student._id);
+                  return (
+                    <label key={student._id} data-student-id={student._id} style={{ display: "flex", alignItems: "center", padding: "8px", borderBottom: "1px solid #eee", cursor: isAlreadyInBatch ? "not-allowed" : "pointer" }}>
+                      <input
+                        type="checkbox"
+                        className="student-checkbox"
+                        value={student._id}
+                        disabled={isAlreadyInBatch}
+                        defaultChecked={isAlreadyInBatch}
+                      />
+                      <span style={{ marginLeft: "10px", fontWeight: isAlreadyInBatch ? "bold" : "normal" }}>
+                        {student.name} ({student.rollNumber || "N/A"})
+                      </span>
+                      {isAlreadyInBatch && <span style={{ marginLeft: "10px", fontSize: "12px", color: "green" }}>✅ Already in batch</span>}
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="form-actions">
+              <button className="btn btn-outline" onClick={() => setShowStudentModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleAddStudents}>Add Students</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- VIEW BATCH DETAILS MODAL (SHOW ALL STUDENT DETAILS) --- */}
+      {showBatchDetailsModal && selectedBatch && (
+        <div className="modal-overlay" onClick={() => setShowBatchDetailsModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "900px" }}>
+            <div className="modal-header">
+              <h3 className="modal-title">📋 Students in "{selectedBatch.name}"</h3>
+              <button className="modal-close" onClick={() => setShowBatchDetailsModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: "500px", overflowY: "auto" }}>
+              {selectedBatch.students?.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--text-muted)" }}>No students added to this batch yet.</p>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
+                      <th style={{ padding: "12px", textAlign: "left" }}>#</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Name</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Roll No</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Email</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Course</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Fees</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedBatch.students?.map((student, index) => (
+                      <tr key={student._id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                        <td style={{ padding: "12px", color: "#6b7280" }}>{index + 1}</td>
+                        <td style={{ padding: "12px", fontWeight: "600" }}>{student.name}</td>
+                        <td style={{ padding: "12px" }}>{student.rollNumber || "N/A"}</td>
+                        <td style={{ padding: "12px" }}>{student.email || "N/A"}</td>
+                        <td style={{ padding: "12px" }}>
+                          <span className={`course-pill ${student.courseType?.toLowerCase() || 'silver'}`}>
+                            {student.courseType || 'Silver'}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px" }}>₹{student.fees || 0}</td>
+                        <td style={{ padding: "12px" }}>
+                          <span className={`status-pill ${student.status || 'active'}`}>
+                            {student.status || 'Active'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="form-actions">
+              <button className="btn btn-outline" onClick={() => setShowBatchDetailsModal(false)}>Close</button>
             </div>
           </div>
         </div>
