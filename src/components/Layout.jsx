@@ -68,7 +68,7 @@ export default function Layout() {
           description: "Manage students",
         },
         {
-          path: "/admin/projects", 
+          path: "/admin/projects",
           label: "Projects",
           icon: "📁",
           description: "Manage projects",
@@ -101,14 +101,14 @@ export default function Layout() {
           description: "Overview",
         },
         {
-          path: "/counsellor/batches", 
+          path: "/counsellor/batches",
           label: "Batches",
           icon: "📚",
           description: "Manage batches",
         },
         // ✅ ADDED: Counsellor can view Student Applications/Placements
         {
-          path: "/counsellor/placements", 
+          path: "/counsellor/placements",
           label: "Student Applications",
           icon: "📋",
           description: "View student applications",
@@ -135,6 +135,12 @@ export default function Layout() {
           label: "Mark Attendance",
           icon: "✅",
           description: "Mark today's attendance",
+        },
+        {
+          path: "/teacher/batches",
+          label: "My Batches",
+          icon: "📚",
+          description: "Manage my batches",
         },
         {
           path: "/teacher/students",
@@ -176,8 +182,8 @@ export default function Layout() {
   const roleColor = getRoleColor();
 
   // Debug: Log current path and user
-  console.log("Current user role:", user?.role);
-  console.log("Nav items:", navItems);
+  // console.log("Current user role:", user?.role);
+  // console.log("Nav items:", navItems);
 
   return (
     <div className={`layout ${isSidebarCollapsed ? "collapsed" : ""}`}>

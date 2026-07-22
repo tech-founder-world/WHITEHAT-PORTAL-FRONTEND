@@ -14,11 +14,11 @@ import AttendanceHistory from "./pages/AttendanceHistory";
 import Evaluations from "./pages/Evaluations";
 import Layout from "./components/Layout";
 import TeacherProjects from "./pages/TeacherProjects";
-import CounsellorBatches from './pages/CounsellorBatches'
+import CounsellorBatches from "./pages/CounsellorBatches";
 import Placement from "./pages/Placement";
-import StudentPlacementForm from './components/StudentPlacementForm';
+import StudentPlacementForm from "./components/StudentPlacementForm";
 import CounsellorTrack from "./pages/CounsellorTrack";
-
+import TeacherBatches from "./pages/TeacherBatches";
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -78,6 +78,7 @@ export default function App() {
           >
             <Route index element={<TeacherDashboard />} />
             <Route path="mark-attendance" element={<MarkAttendance />} />
+            <Route path="batches" element={<TeacherBatches />} /> {/* NEW */}
             <Route path="projects" element={<TeacherProjects />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="students" element={<ManageStudents />} />
