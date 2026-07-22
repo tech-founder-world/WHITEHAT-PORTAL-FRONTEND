@@ -11,29 +11,36 @@ export default function AdminDashboard() {
     students: 0,
     todayRecords: 0,
     projects: 0,
-    placements:0,
+    placements: 0,
+    batches: 0,
+    activeBatches: 0,
+    batchStudents: 0,
   });
   const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [teachersRes, studentsRes, attendanceRes, projectsRes, placementsRes] =
+        const [teachersRes, studentsRes, attendanceRes, projectsRes, placementsRes, batchesRes] =
           await Promise.all([
             api.get("/admin/teachers"),
             api.get("/students"),
-            api.get(
-              `/attendance?date=${new Date().toISOString().split("T")[0]}`,
-            ),
+            api.get(`/attendance?date=${new Date().toISOString().split("T")[0]}`),
             api.get("/projects"),
-            api.get("/placement/all"), // <-- ADD THIS LINE
+            api.get("/placement/all"),
+            api.get("/batches"),
           ]);
+        
+        const batches = batchesRes.data || [];
         setStats({
           teachers: teachersRes.data.length,
           students: studentsRes.data.length,
           todayRecords: attendanceRes.data.length,
           projects: projectsRes.data.length,
-          placements: placementsRes.data.length, // <-- ADD THIS
+          placements: placementsRes.data.length,
+          batches: batches.length,
+          activeBatches: batches.filter(b => b.status === "active").length,
+          batchStudents: batches.reduce((sum, b) => sum + (b.students?.length || 0), 0),
         });
       } catch (err) {
         console.error(err);
@@ -79,6 +86,24 @@ export default function AdminDashboard() {
           <div className="stat-label">Total Placements</div>
           <div className="stat-value">{loading ? "—" : stats.placements}</div>
         </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #8b5cf6" }}>
+          <div className="stat-label">Total Batches</div>
+          <div className="stat-value" style={{ color: "#8b5cf6" }}>
+            {loading ? "—" : stats.batches}
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #22c55e" }}>
+          <div className="stat-label">Active Batches</div>
+          <div className="stat-value" style={{ color: "#22c55e" }}>
+            {loading ? "—" : stats.activeBatches}
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #f59e0b" }}>
+          <div className="stat-label">Students in Batches</div>
+          <div className="stat-value" style={{ color: "#f59e0b" }}>
+            {loading ? "—" : stats.batchStudents}
+          </div>
+        </div>
       </div>
 
       <div className="quick-actions-grid">
@@ -104,6 +129,17 @@ export default function AdminDashboard() {
           <div className="qa-arrow">→</div>
         </Link>
 
+        <Link to="/admin/batches" className="quick-action-card">
+          <div className="qa-icon">📚</div>
+          <div className="qa-text">
+            <div className="qa-title">Manage Batches</div>
+            <div className="qa-desc">
+              Create and manage batches, add students to batches
+            </div>
+          </div>
+          <div className="qa-arrow">→</div>
+        </Link>
+
         <Link to="/admin/attendance" className="quick-action-card">
           <div className="qa-icon">📋</div>
           <div className="qa-text">
@@ -121,6 +157,17 @@ export default function AdminDashboard() {
             <div className="qa-title">Manage Projects</div>
             <div className="qa-desc">
               Create and manage all projects across the system
+            </div>
+          </div>
+          <div className="qa-arrow">→</div>
+        </Link>
+
+        <Link to="/admin/placements" className="quick-action-card">
+          <div className="qa-icon">💼</div>
+          <div className="qa-text">
+            <div className="qa-title">Placements</div>
+            <div className="qa-desc">
+              Manage student placements and job opportunities
             </div>
           </div>
           <div className="qa-arrow">→</div>

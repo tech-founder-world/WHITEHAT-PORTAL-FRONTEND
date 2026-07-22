@@ -3,7 +3,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminProjects from "./pages/AdminProjects"; // Add this import
+import AdminProjects from "./pages/AdminProjects";
+import AdminBatches from "./pages/AdminBatches";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import CounsellorDashboard from "./pages/CounsellorDashboard";
 import ManageTeachers from "./pages/ManageTeachers";
@@ -59,11 +60,10 @@ export default function App() {
             <Route path="teachers" element={<ManageTeachers />} />
             <Route path="counsellors" element={<ManageCounsellors />} />
             <Route path="students" element={<ManageStudents />} />
-            <Route path="projects" element={<AdminProjects />} />{" "}
-            {/* Add this */}
+            <Route path="batches" element={<AdminBatches />} />
+            <Route path="projects" element={<AdminProjects />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="attendance" element={<AttendanceHistory />} />
-            {/* ✅ PLACEMENT ROUTE - Nested under admin */}
             <Route path="placements" element={<Placement />} />
           </Route>
 
@@ -78,7 +78,7 @@ export default function App() {
           >
             <Route index element={<TeacherDashboard />} />
             <Route path="mark-attendance" element={<MarkAttendance />} />
-            <Route path="batches" element={<TeacherBatches />} /> {/* NEW */}
+            <Route path="batches" element={<TeacherBatches />} />
             <Route path="projects" element={<TeacherProjects />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="students" element={<ManageStudents />} />

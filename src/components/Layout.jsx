@@ -68,6 +68,12 @@ export default function Layout() {
           description: "Manage students",
         },
         {
+          path: "/admin/batches",
+          label: "Batches",
+          icon: "📚",
+          description: "Manage batches",
+        },
+        {
           path: "/admin/projects",
           label: "Projects",
           icon: "📁",
@@ -106,12 +112,11 @@ export default function Layout() {
           icon: "📚",
           description: "Manage batches",
         },
-        // ✅ ADDED: Counsellor can view Student Applications/Placements
         {
-          path: "/counsellor/placements",
-          label: "Student Applications",
-          icon: "📋",
-          description: "View student applications",
+          path: "/counsellor/track",
+          label: "Student Tracker",
+          icon: "📊",
+          description: "Track & update students",
         },
         {
           path: "/counsellor/students",
@@ -119,7 +124,6 @@ export default function Layout() {
           icon: "🎓",
           description: "Assigned students",
         },
-        // 🗑️ REMOVED: History and Evaluations from Counsellor Menu
       ];
     } else {
       // Teacher
@@ -135,12 +139,6 @@ export default function Layout() {
           label: "Mark Attendance",
           icon: "✅",
           description: "Mark today's attendance",
-        },
-        {
-          path: "/teacher/batches",
-          label: "My Batches",
-          icon: "📚",
-          description: "Manage my batches",
         },
         {
           path: "/teacher/students",
@@ -166,6 +164,12 @@ export default function Layout() {
           icon: "📁",
           description: "Manage projects",
         },
+        {
+          path: "/teacher/batches",
+          label: "Batches",
+          icon: "📚",
+          description: "Manage batches",
+        },
       ];
     }
   };
@@ -180,10 +184,6 @@ export default function Layout() {
   };
 
   const roleColor = getRoleColor();
-
-  // Debug: Log current path and user
-  // console.log("Current user role:", user?.role);
-  // console.log("Nav items:", navItems);
 
   return (
     <div className={`layout ${isSidebarCollapsed ? "collapsed" : ""}`}>
@@ -309,7 +309,6 @@ export default function Layout() {
 
       <main className="main-content">
         <div className="content-wrapper">
-          {/* The Outlet renders the child route components here */}
           <Outlet />
         </div>
       </main>
