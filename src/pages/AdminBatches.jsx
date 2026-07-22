@@ -257,16 +257,25 @@ export default function AdminBatches() {
     setShowDeleteConfirm(true);
   };
 
-  const getDurationDisplay = (batch) => {
-    if (!batch.duration || batch.duration === 0) {
-      return "Not specified";
-    }
-    
-    if (batch.durationType === "months") {
-      return `${batch.duration} month${batch.duration > 1 ? "s" : ""}`;
-    }
-    return `${batch.duration} day${batch.duration > 1 ? "s" : ""}`;
-  };
+ const getDurationDisplay = (batch) => {
+  // Check if batch exists
+  if (!batch) return "Not specified";
+  
+  // Check if duration exists and is a valid number
+  if (batch.duration === undefined || batch.duration === null) {
+    return "Not specified";
+  }
+  
+  const durationNum = Number(batch.duration);
+  if (isNaN(durationNum) || durationNum === 0) {
+    return "Not specified";
+  }
+  
+  if (batch.durationType === "months") {
+    return `${durationNum} month${durationNum > 1 ? "s" : ""}`;
+  }
+  return `${durationNum} day${durationNum > 1 ? "s" : ""}`;
+};
 
   const getCategoryBadge = (category) => {
     const colors = {
