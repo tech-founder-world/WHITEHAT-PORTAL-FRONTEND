@@ -23,7 +23,6 @@ export default function ManageTeachers() {
   const fetchTeachers = async () => {
     try {
       const { data } = await api.get("/admin/teachers");
-      // Fetch students for each teacher
       const teachersWithStudents = await Promise.all(
         data.map(async (teacher) => {
           try {
@@ -82,11 +81,19 @@ export default function ManageTeachers() {
     }));
   };
 
+  // 🆕 Auto capitalize subject when adding
   const addSubject = () => {
     const trimmed = subjectInput.trim();
     if (!trimmed) return;
-    if (!form.subjects.includes(trimmed)) {
-      setForm((prev) => ({ ...prev, subjects: [...prev.subjects, trimmed] }));
+
+    // Capitalize the subject
+    const capitalized = trimmed.toUpperCase();
+
+    if (!form.subjects.includes(capitalized)) {
+      setForm((prev) => ({
+        ...prev,
+        subjects: [...prev.subjects, capitalized],
+      }));
     }
     setSubjectInput("");
   };
@@ -96,6 +103,13 @@ export default function ManageTeachers() {
       ...prev,
       subjects: prev.subjects.filter((s) => s !== sub),
     }));
+  };
+
+  // 🆕 Handle subject input - auto capitalize as user types
+  const handleSubjectInputChange = (e) => {
+    // Convert to uppercase as user types
+    const value = e.target.value.toUpperCase();
+    setSubjectInput(value);
   };
 
   const handleSave = async () => {
@@ -108,7 +122,7 @@ export default function ManageTeachers() {
       const payload = {
         name: form.name,
         email: form.email,
-        subjects: form.subjects,
+        subjects: form.subjects, // Already capitalized
         ...(form.password && { password: form.password }),
       };
       if (editId) {
@@ -295,7 +309,7 @@ export default function ManageTeachers() {
                               color: "var(--gray-500)",
                             }}
                           >
-                            {student.rollNumber}
+                            {student.subjects?.join(", ") || "No subjects"}
                           </span>
                         </div>
                       ))}
@@ -311,7 +325,7 @@ export default function ManageTeachers() {
         )}
       </div>
 
-      {/* Modal - same as before */}
+      {/* Modal - Updated with auto-capitalization */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -371,8 +385,11 @@ export default function ManageTeachers() {
                   marginBottom: "8px",
                 }}
               >
-                These become the subject tags. Only students enrolled in the
-                same subject will appear when this teacher marks attendance.
+                Only students enrolled in these subjects will be assignable to
+                this teacher.
+                <br />
+                <strong>Note:</strong> Subjects will be automatically
+                capitalized.
               </p>
 
               {knownSubjects.length > 0 && (
@@ -417,9 +434,9 @@ export default function ManageTeachers() {
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
                   className="form-control"
-                  placeholder="New subject name..."
+                  placeholder="Type subject name (auto-capitalized)..."
                   value={subjectInput}
-                  onChange={(e) => setSubjectInput(e.target.value)}
+                  onChange={handleSubjectInputChange}
                   onKeyDown={(e) =>
                     e.key === "Enter" && (e.preventDefault(), addSubject())
                   }
