@@ -68,12 +68,14 @@ export default function ManageStudents() {
         );
         setAllSubjects([...subjectSet].sort());
       } else {
+        // Teacher - Only show students with matching subjects
         const teacherSubjects = user?.subjects || [];
         setAllSubjects(teacherSubjects);
 
         if (teacherSubjects.length === 0) {
           setStudents([]);
         } else {
+          // Fetch students that have at least one matching subject
           const results = await Promise.all(
             teacherSubjects.map((sub) =>
               api.get(`/students?subject=${encodeURIComponent(sub)}`),
@@ -83,7 +85,11 @@ export default function ManageStudents() {
           const combined = [];
           results.forEach((r) => {
             r.data.forEach((s) => {
-              if (!seen.has(s._id)) {
+              // Also check if student is assigned to this teacher
+              if (
+                !seen.has(s._id) &&
+                (s.teacher?._id === user._id || s.teacher === user._id)
+              ) {
                 seen.add(s._id);
                 combined.push(s);
               }
@@ -155,11 +161,13 @@ export default function ManageStudents() {
   };
 
   const toggleSubject = (sub) => {
+    // Ensure subject is capitalized for comparison
+    const capitalizedSub = sub.toUpperCase();
     setForm((prev) => ({
       ...prev,
-      subjects: prev.subjects.includes(sub)
-        ? prev.subjects.filter((s) => s !== sub)
-        : [...prev.subjects, sub],
+      subjects: prev.subjects.includes(capitalizedSub)
+        ? prev.subjects.filter((s) => s !== capitalizedSub)
+        : [...prev.subjects, capitalizedSub],
     }));
   };
 
@@ -386,7 +394,7 @@ export default function ManageStudents() {
             {isCounsellor &&
               `${students.length} student${students.length !== 1 ? "s" : ""} registered`}
             {isTeacher &&
-              `Students enrolled in your subject${(user?.subjects || []).length !== 1 ? "s" : ""}: ${(user?.subjects || []).join(", ")}`}
+              `You have ${students.length} assigned student${students.length !== 1 ? "s" : ""} (${(user?.subjects || []).join(", ")})`}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -878,7 +886,11 @@ export default function ManageStudents() {
                   className="form-control"
                   placeholder="Type a custom subject name..."
                   value={subjectInput}
-                  onChange={(e) => setSubjectInput(e.target.value)}
+                  onChange={(e) => {
+                    // 🆕 Auto capitalize as user types
+                    const value = e.target.value.toUpperCase();
+                    setSubjectInput(value);
+                  }}
                   onKeyDown={(e) =>
                     e.key === "Enter" &&
                     (e.preventDefault(), addCustomSubject())
@@ -959,6 +971,7 @@ export default function ManageStudents() {
       )}
 
       {/* Assign Teacher Modal */}
+      {/* Assign Teacher Modal - Updated with Subject Validation */}
       {isAdmin && showAssignModal && selectedStudent && (
         <div
           className="modal-overlay"
@@ -967,7 +980,7 @@ export default function ManageStudents() {
           <div
             className="modal"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "500px" }}
+            style={{ maxWidth: "600px" }}
           >
             <div className="modal-header">
               <h3 className="modal-title">
@@ -981,20 +994,64 @@ export default function ManageStudents() {
               </button>
             </div>
 
-            <p
-              style={{
-                fontSize: "13px",
-                color: "var(--text-muted)",
-                marginBottom: "12px",
-              }}
-            >
-              Select a teacher to assign to this student
-            </p>
+            {/* 🆕 Student Info and Validation Notice */}
+            <div style={{ marginBottom: "16px" }}>
+              <div
+                style={{
+                  fontSize: "13px",
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  borderRadius: "8px",
+                  border: "1px solid #bbf7d0",
+                  marginBottom: "8px",
+                }}
+              >
+                <strong>📚 Student Subjects:</strong>
+                <span style={{ marginLeft: "8px" }}>
+                  {selectedStudent.subjects?.length > 0
+                    ? selectedStudent.subjects.join(", ")
+                    : "No subjects assigned"}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  padding: "8px 14px",
+                  background: "#fef3c7",
+                  borderRadius: "8px",
+                  border: "1px solid #fcd34d",
+                }}
+              >
+                <strong>⚠️ Note:</strong> Only teachers with matching subjects
+                will be shown.
+                <br />
+                <span style={{ fontSize: "11px", color: "var(--gray-500)" }}>
+                  Teacher must have at least one subject that matches student's
+                  subjects.
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  padding: "8px 14px",
+                  marginTop: "8px",
+                  background: "#eff6ff",
+                  borderRadius: "8px",
+                  border: "1px solid #bfdbfe",
+                }}
+              >
+                <strong>💡 Tip:</strong> If no teachers appear, make sure:
+                <br />
+                1. Teachers have subjects assigned in their profile
+                <br />
+                2. Student has at least one matching subject
+              </div>
+            </div>
 
             <div className="form-group">
               <input
                 className="form-control"
-                placeholder="🔍 Search teachers..."
+                placeholder="🔍 Search teachers by name..."
                 onChange={(e) => {
                   const searchTerm = e.target.value.toLowerCase();
                   const teacherItems =
@@ -1008,41 +1065,214 @@ export default function ManageStudents() {
                 }}
                 style={{ marginBottom: "12px" }}
               />
-              <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-                {teachers
-                  .filter((t) => t._id !== selectedStudent.teacher?._id)
-                  .map((teacher) => (
-                    <div
-                      key={teacher._id}
-                      className="teacher-item"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 14px",
-                        borderBottom: "1px solid var(--gray-100)",
-                        cursor: "pointer",
-                        transition: "background 0.2s",
-                      }}
-                      onClick={() => handleAssignTeacher(teacher._id)}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = "var(--gray-50)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
-                    >
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{teacher.name}</div>
+
+              {/* 🆕 Show matching count */}
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "var(--gray-500)",
+                  marginBottom: "8px",
+                }}
+              >
+                Showing{" "}
+                {
+                  teachers.filter((t) => {
+                    const studentSubjects = (
+                      selectedStudent.subjects || []
+                    ).map((s) => s.toUpperCase());
+                    const teacherSubjects = (t.subjects || []).map((s) =>
+                      s.toUpperCase(),
+                    );
+                    return studentSubjects.some((sub) =>
+                      teacherSubjects.includes(sub),
+                    );
+                  }).length
+                }{" "}
+                matching teachers
+              </div>
+
+              <div
+                style={{
+                  maxHeight: "350px",
+                  overflowY: "auto",
+                  border: "1px solid var(--gray-200)",
+                  borderRadius: "8px",
+                }}
+              >
+                {teachers.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "20px",
+                      textAlign: "center",
+                      color: "var(--gray-500)",
+                    }}
+                  >
+                    No teachers available. Please add teachers first.
+                  </div>
+                ) : (
+                  teachers
+                    .filter((t) => t._id !== selectedStudent.teacher?._id)
+                    .map((teacher) => {
+                      // Check if teacher has matching subject
+                      const studentSubjects = (
+                        selectedStudent.subjects || []
+                      ).map((s) => s.toUpperCase().trim());
+                      const teacherSubjects = (teacher.subjects || []).map(
+                        (s) => s.toUpperCase().trim(),
+                      );
+
+                      // Find matching subjects
+                      const matchingSubjects = studentSubjects.filter((sub) =>
+                        teacherSubjects.includes(sub),
+                      );
+                      const hasMatchingSubject = matchingSubjects.length > 0;
+                      const isCurrentlyAssigned =
+                        selectedStudent.teacher?._id === teacher._id;
+
+                      return (
                         <div
-                          style={{ fontSize: "12px", color: "var(--gray-500)" }}
+                          key={teacher._id}
+                          className="teacher-item"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "12px 16px",
+                            borderBottom: "1px solid var(--gray-100)",
+                            cursor:
+                              hasMatchingSubject && !isCurrentlyAssigned
+                                ? "pointer"
+                                : "default",
+                            opacity: isCurrentlyAssigned
+                              ? 0.6
+                              : hasMatchingSubject
+                                ? 1
+                                : 0.5,
+                            transition: "background 0.2s",
+                            background: isCurrentlyAssigned
+                              ? "#f3f4f6"
+                              : hasMatchingSubject
+                                ? "transparent"
+                                : "#fafafa",
+                          }}
+                          onClick={() => {
+                            if (hasMatchingSubject && !isCurrentlyAssigned) {
+                              handleAssignTeacher(teacher._id);
+                            }
+                          }}
+                          onMouseEnter={(e) => {
+                            if (hasMatchingSubject && !isCurrentlyAssigned) {
+                              e.currentTarget.style.background =
+                                "var(--gray-50)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (hasMatchingSubject && !isCurrentlyAssigned) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
                         >
-                          {teacher.subjects?.join(", ") || "No subjects"}
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              {teacher.name}
+                              {isCurrentlyAssigned && (
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#16a34a",
+                                    background: "#d1fae5",
+                                    padding: "2px 10px",
+                                    borderRadius: "12px",
+                                  }}
+                                >
+                                  Currently Assigned
+                                </span>
+                              )}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "var(--gray-500)",
+                                marginTop: "2px",
+                              }}
+                            >
+                              <span style={{ fontWeight: "500" }}>
+                                Teaches:
+                              </span>
+                              {teacher.subjects?.length > 0
+                                ? teacher.subjects.join(", ")
+                                : "No subjects assigned"}
+                            </div>
+                            {hasMatchingSubject && !isCurrentlyAssigned && (
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#16a34a",
+                                  marginTop: "2px",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                ✅ Matching subjects:{" "}
+                                {matchingSubjects.join(", ")}
+                              </div>
+                            )}
+                            {!hasMatchingSubject && !isCurrentlyAssigned && (
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#dc2626",
+                                  marginTop: "2px",
+                                }}
+                              >
+                                ⚠️ No matching subjects
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    color: "var(--gray-400)",
+                                    marginLeft: "4px",
+                                    fontStyle: "italic",
+                                  }}
+                                >
+                                  (Student:{" "}
+                                  {studentSubjects.join(", ") || "None"})
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            disabled={
+                              !hasMatchingSubject || isCurrentlyAssigned
+                            }
+                            style={{
+                              opacity:
+                                hasMatchingSubject && !isCurrentlyAssigned
+                                  ? 1
+                                  : 0.5,
+                              cursor:
+                                hasMatchingSubject && !isCurrentlyAssigned
+                                  ? "pointer"
+                                  : "not-allowed",
+                              minWidth: "70px",
+                            }}
+                          >
+                            {isCurrentlyAssigned
+                              ? "✅ Assigned"
+                              : hasMatchingSubject
+                                ? "Assign"
+                                : "No Match"}
+                          </button>
                         </div>
-                      </div>
-                      <button className="btn btn-primary btn-sm">Assign</button>
-                    </div>
-                  ))}
+                      );
+                    })
+                )}
               </div>
             </div>
 
@@ -1053,6 +1283,32 @@ export default function ManageStudents() {
               >
                 Cancel
               </button>
+              {selectedStudent.teacher && (
+                <button
+                  className="btn btn-danger"
+                  onClick={async () => {
+                    if (
+                      window.confirm(
+                        `Remove teacher "${selectedStudent.teacher.name}" from ${selectedStudent.name}?`,
+                      )
+                    ) {
+                      try {
+                        // Remove teacher assignment
+                        await api.put(`/students/${selectedStudent._id}`, {
+                          teacher: null,
+                        });
+                        showToast("Teacher unassigned successfully");
+                        setShowAssignModal(false);
+                        fetchAll();
+                      } catch (err) {
+                        showToast("Error unassigning teacher", "error");
+                      }
+                    }
+                  }}
+                >
+                  Unassign Teacher
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -46,7 +46,8 @@ export default function TeacherBatches() {
         api.get("/students"),
       ]);
       setBatches(batchesRes.data || []);
-      // Filter students assigned to this teacher
+
+      // 🆕 Filter students assigned to this teacher with matching subjects
       const assignedStudents = (studentsRes.data || []).filter(
         (s) => s.teacher?._id === user._id || s.teacher === user._id,
       );
