@@ -48,6 +48,7 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
+          exact: true, // Add this for dashboard
         },
         {
           path: "/admin/teachers",
@@ -105,6 +106,7 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
+          exact: true,
         },
         {
           path: "/counsellor/batches",
@@ -133,6 +135,7 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
+          exact: true,
         },
         {
           path: "/teacher/mark-attendance",
@@ -269,6 +272,7 @@ export default function Layout() {
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.exact || false} // Add end prop for exact matching
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? "active" : ""}`
               }
