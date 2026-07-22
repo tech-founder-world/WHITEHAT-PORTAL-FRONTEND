@@ -99,3 +99,87 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Search highlight */
+mark {
+  background: var(--primary-bg);
+  padding: 0 2px;
+  border-radius: 2px;
+  color: var(--primary);
+}
+
+/* Search bar container */
+.search-container {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input {
+  padding-right: 40px !important;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--gray-500);
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.search-clear-btn:hover {
+  color: var(--gray-700);
+}
+
+.counsellor-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.counsellor-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.specialization-tag {
+  display: inline-block;
+  padding: 2px 12px;
+  background: var(--info-bg);
+  color: var(--info);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.student-count-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: var(--gray-100);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .student-select-grid {
+    grid-template-columns: 1fr;
+  }
+}

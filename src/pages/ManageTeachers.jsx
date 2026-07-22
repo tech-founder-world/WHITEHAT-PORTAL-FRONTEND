@@ -6,6 +6,8 @@ const emptyForm = { name: "", email: "", password: "", subjects: [] };
 
 export default function ManageTeachers() {
   const [teachers, setTeachers] = useState([]);
+  const [filteredTeachers, setFilteredTeachers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -23,7 +25,6 @@ export default function ManageTeachers() {
   const fetchTeachers = async () => {
     try {
       const { data } = await api.get("/admin/teachers");
-      // Fetch students for each teacher
       const teachersWithStudents = await Promise.all(
         data.map(async (teacher) => {
           try {
@@ -37,6 +38,7 @@ export default function ManageTeachers() {
         }),
       );
       setTeachers(teachersWithStudents);
+      setFilteredTeachers(teachersWithStudents);
     } catch (err) {
       console.error("Error fetching teachers:", err);
       showToast("Error loading teachers", "error");
@@ -48,6 +50,28 @@ export default function ManageTeachers() {
   useEffect(() => {
     fetchTeachers();
   }, []);
+
+  // Filter teachers when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredTeachers(teachers);
+      return;
+    }
+    const search = searchTerm.toLowerCase().trim();
+    const filtered = teachers.filter((teacher) => {
+      return (
+        teacher.name.toLowerCase().includes(search) ||
+        teacher.email.toLowerCase().includes(search) ||
+        (teacher.subjects || []).some((sub) =>
+          sub.toLowerCase().includes(search),
+        ) ||
+        (teacher.students || []).some((student) =>
+          student.name.toLowerCase().includes(search),
+        )
+      );
+    });
+    setFilteredTeachers(filtered);
+  }, [searchTerm, teachers]);
 
   // Collect all subjects already used across teachers
   const knownSubjects = [
@@ -85,8 +109,12 @@ export default function ManageTeachers() {
   const addSubject = () => {
     const trimmed = subjectInput.trim();
     if (!trimmed) return;
-    if (!form.subjects.includes(trimmed)) {
-      setForm((prev) => ({ ...prev, subjects: [...prev.subjects, trimmed] }));
+    const capitalized = trimmed.toUpperCase();
+    if (!form.subjects.includes(capitalized)) {
+      setForm((prev) => ({
+        ...prev,
+        subjects: [...prev.subjects, capitalized],
+      }));
     }
     setSubjectInput("");
   };
@@ -96,6 +124,11 @@ export default function ManageTeachers() {
       ...prev,
       subjects: prev.subjects.filter((s) => s !== sub),
     }));
+  };
+
+  const handleSubjectInputChange = (e) => {
+    const value = e.target.value.toUpperCase();
+    setSubjectInput(value);
   };
 
   const handleSave = async () => {
@@ -146,6 +179,11 @@ export default function ManageTeachers() {
     setExpandedTeacher(expandedTeacher === teacherId ? null : teacherId);
   };
 
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
   return (
     <div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
@@ -156,6 +194,8 @@ export default function ManageTeachers() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: "10px",
         }}
       >
         <div>
@@ -170,15 +210,95 @@ export default function ManageTeachers() {
       </div>
 
       <div className="card">
+        {/* Search Bar */}
+        <div style={{ marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
+              <input
+                className="form-control"
+                placeholder="🔍 Search teachers by name, email, subject, or student..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ paddingRight: "40px" }}
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  style={{
+                    position: "absolute",
+                    right: "8px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    fontSize: "16px",
+                    cursor: "pointer",
+                    color: "var(--gray-500)",
+                    padding: "4px 8px",
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize: "13px", color: "var(--gray-600)" }}>
+              {searchTerm ? (
+                <span>
+                  Found <strong>{filteredTeachers.length}</strong> of{" "}
+                  {teachers.length} teachers
+                  {filteredTeachers.length !== teachers.length && (
+                    <button
+                      onClick={clearSearch}
+                      style={{
+                        marginLeft: "8px",
+                        color: "var(--primary)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </span>
+              ) : (
+                <span>Total: {teachers.length} teachers</span>
+              )}
+            </div>
+          </div>
+        </div>
+
         {loading ? (
           <div className="loading-wrapper">
             <div className="spinner" />
             <p>Loading...</p>
           </div>
-        ) : teachers.length === 0 ? (
+        ) : filteredTeachers.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">👩‍🏫</div>
-            <p>No teachers yet. Add your first teacher to get started.</p>
+            <div className="empty-icon">{searchTerm ? "🔍" : "👩‍🏫"}</div>
+            <p>
+              {searchTerm
+                ? `No teachers found matching "${searchTerm}"`
+                : "No teachers yet. Add your first teacher to get started."}
+            </p>
+            {searchTerm && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={clearSearch}
+                style={{ marginTop: "8px" }}
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <div className="table-wrapper">
@@ -194,7 +314,7 @@ export default function ManageTeachers() {
                 </tr>
               </thead>
               <tbody>
-                {teachers.map((t, i) => (
+                {filteredTeachers.map((t, i) => (
                   <tr key={t._id}>
                     <td className="text-muted">{i + 1}</td>
                     <td>
@@ -295,7 +415,7 @@ export default function ManageTeachers() {
                               color: "var(--gray-500)",
                             }}
                           >
-                            {student.rollNumber}
+                            {student.subjects?.join(", ") || "No subjects"}
                           </span>
                         </div>
                       ))}
@@ -311,7 +431,7 @@ export default function ManageTeachers() {
         )}
       </div>
 
-      {/* Modal - same as before */}
+      {/* Modal - Same as before */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -371,8 +491,11 @@ export default function ManageTeachers() {
                   marginBottom: "8px",
                 }}
               >
-                These become the subject tags. Only students enrolled in the
-                same subject will appear when this teacher marks attendance.
+                Only students enrolled in these subjects will be assignable to
+                this teacher.
+                <br />
+                <strong>Note:</strong> Subjects will be automatically
+                capitalized.
               </p>
 
               {knownSubjects.length > 0 && (
@@ -417,9 +540,9 @@ export default function ManageTeachers() {
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
                   className="form-control"
-                  placeholder="New subject name..."
+                  placeholder="Type subject name (auto-capitalized)..."
                   value={subjectInput}
-                  onChange={(e) => setSubjectInput(e.target.value)}
+                  onChange={handleSubjectInputChange}
                   onKeyDown={(e) =>
                     e.key === "Enter" && (e.preventDefault(), addSubject())
                   }

@@ -3,7 +3,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminProjects from "./pages/AdminProjects"; // Add this import
+import AdminProjects from "./pages/AdminProjects";
+import AdminBatches from "./pages/AdminBatches";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import CounsellorDashboard from "./pages/CounsellorDashboard";
 import ManageTeachers from "./pages/ManageTeachers";
@@ -15,6 +16,10 @@ import Evaluations from "./pages/Evaluations";
 import Layout from "./components/Layout";
 import TeacherProjects from "./pages/TeacherProjects";
 import CounsellorBatches from "./pages/CounsellorBatches";
+import Placement from "./pages/Placement";
+import StudentPlacementForm from "./components/StudentPlacementForm";
+import CounsellorTrack from "./pages/CounsellorTrack";
+import TeacherBatches from "./pages/TeacherBatches";
 
 function ProtectedRoute({ children, requiredRole }) {
   const { user, loading } = useAuth();
@@ -55,10 +60,11 @@ export default function App() {
             <Route path="teachers" element={<ManageTeachers />} />
             <Route path="counsellors" element={<ManageCounsellors />} />
             <Route path="students" element={<ManageStudents />} />
-            <Route path="projects" element={<AdminProjects />} />{" "}
-            {/* Add this */}
+            <Route path="batches" element={<AdminBatches />} />
+            <Route path="projects" element={<AdminProjects />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="attendance" element={<AttendanceHistory />} />
+            <Route path="placements" element={<Placement />} />
           </Route>
 
           {/* Teacher Routes */}
@@ -72,6 +78,7 @@ export default function App() {
           >
             <Route index element={<TeacherDashboard />} />
             <Route path="mark-attendance" element={<MarkAttendance />} />
+            <Route path="batches" element={<TeacherBatches />} />
             <Route path="projects" element={<TeacherProjects />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="students" element={<ManageStudents />} />
@@ -92,9 +99,13 @@ export default function App() {
             <Route path="history" element={<AttendanceHistory />} />
             <Route path="evaluations" element={<Evaluations />} />
             <Route path="batches" element={<CounsellorBatches />} />
+            <Route path="track" element={<CounsellorTrack />} />
+            <Route path="placements" element={<Placement />} />
           </Route>
 
+          {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/apply/:formLink" element={<StudentPlacementForm />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

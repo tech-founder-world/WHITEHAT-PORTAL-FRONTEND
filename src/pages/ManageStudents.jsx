@@ -5,12 +5,12 @@ import "../css/ManageStudents.css";
 
 const emptyForm = {
   name: "",
-  rollNumber: "",
+  fatherName: "",
   email: "",
-  subjects: [],
   phone: "",
-  class: "",
-  section: "",
+  subjects: [],
+  totalFee: 0,
+  paidAmount: 0,
 };
 
 export default function ManageStudents() {
@@ -41,7 +41,7 @@ export default function ManageStudents() {
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 5000);
   };
 
   const fetchAll = async () => {
@@ -116,7 +116,9 @@ export default function ManageStudents() {
         const matchSearch =
           !q ||
           s.name.toLowerCase().includes(q) ||
-          s.rollNumber.toLowerCase().includes(q) ||
+          s.email?.toLowerCase().includes(q) ||
+          s.fatherName?.toLowerCase().includes(q) ||
+          s.phone?.includes(q) ||
           (s.subjects || []).some((sub) => sub.toLowerCase().includes(q));
         return matchSubject && matchAddedBy && matchSearch;
       }),
@@ -134,13 +136,13 @@ export default function ManageStudents() {
   const openEdit = (s) => {
     if (!canAddStudents) return;
     setForm({
-      name: s.name,
-      rollNumber: s.rollNumber,
+      name: s.name || "",
+      fatherName: s.fatherName || "",
       email: s.email || "",
-      subjects: s.subjects || [],
       phone: s.phone || "",
-      class: s.class || "",
-      section: s.section || "",
+      subjects: s.subjects || [],
+      totalFee: s.totalFee || 0,
+      paidAmount: s.paidAmount || 0,
     });
     setSubjectInput("");
     setEditId(s._id);
@@ -150,6 +152,32 @@ export default function ManageStudents() {
   const openAssignTeacher = (student) => {
     setSelectedStudent(student);
     setShowAssignModal(true);
+  };
+
+  // 🆕 Function to remove teacher from student
+  const handleRemoveTeacher = async (student) => {
+    if (
+      !window.confirm(
+        `Remove teacher "${student.teacher?.name}" from ${student.name}?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.delete(`/admin/students/${student._id}/teacher`);
+      showToast(`✅ Teacher removed from ${student.name} successfully`);
+      fetchAll();
+    } catch (err) {
+      console.error("Error removing teacher:", err);
+      showToast(
+        err.response?.data?.message || "Error removing teacher",
+        "error",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleSubject = (sub) => {
@@ -164,8 +192,12 @@ export default function ManageStudents() {
   const addCustomSubject = () => {
     const trimmed = subjectInput.trim();
     if (!trimmed) return;
-    if (!form.subjects.includes(trimmed))
-      setForm((prev) => ({ ...prev, subjects: [...prev.subjects, trimmed] }));
+    const capitalized = trimmed.toUpperCase();
+    if (!form.subjects.includes(capitalized))
+      setForm((prev) => ({
+        ...prev,
+        subjects: [...prev.subjects, capitalized],
+      }));
     setSubjectInput("");
   };
 
@@ -176,30 +208,64 @@ export default function ManageStudents() {
     }));
 
   const handleSave = async () => {
-    if (!form.name || !form.rollNumber)
-      return showToast("Name and roll number required", "error");
+    if (!form.name || !form.fatherName || !form.email || !form.phone) {
+      return showToast(
+        "Name, father's name, email, and phone are required",
+        "error",
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      return showToast("Please enter a valid email address", "error");
+    }
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(form.phone)) {
+      return showToast("Please enter a valid 10-digit phone number", "error");
+    }
+
     setSaving(true);
     try {
+      const cleanEmail = form.email.trim().toLowerCase();
+
+      const existingStudent = students.find(
+        (s) => s.email?.toLowerCase() === cleanEmail && s._id !== editId,
+      );
+
+      if (existingStudent) {
+        showToast(
+          `Email "${cleanEmail}" already exists for student "${existingStudent.name}". Please use a different email.`,
+          "error",
+        );
+        setSaving(false);
+        return;
+      }
+
       const payload = {
-        name: form.name,
-        rollNumber: form.rollNumber,
-        email: form.email,
-        subjects: form.subjects,
-        phone: form.phone,
-        class: form.class,
-        section: form.section,
+        name: form.name.trim(),
+        fatherName: form.fatherName.trim(),
+        email: cleanEmail,
+        phone: form.phone.trim(),
+        subjects: form.subjects.map((s) => s.toUpperCase()),
+        totalFee: form.totalFee || 0,
+        paidAmount: form.paidAmount || 0,
       };
+
+      let response;
       if (editId) {
-        await api.put(`/students/${editId}`, payload);
-        showToast("Student updated");
+        response = await api.put(`/students/${editId}`, payload);
+        showToast(response.data.message || "Student updated successfully");
       } else {
-        await api.post("/students", payload);
-        showToast("Student added");
+        response = await api.post("/students", payload);
+        showToast(response.data.message || "Student added successfully");
       }
       setShowModal(false);
       fetchAll();
     } catch (err) {
-      showToast(err.response?.data?.message || "Error saving student", "error");
+      console.error("Error saving student:", err);
+      let errorMessage = err.response?.data?.message || "Error saving student";
+      showToast(errorMessage, "error");
     } finally {
       setSaving(false);
     }
@@ -224,19 +290,100 @@ export default function ManageStudents() {
 
   const handleAssignTeacher = async (teacherId) => {
     try {
-      await api.post("/admin/students/assign-teacher", {
+      const response = await api.post("/admin/students/assign-teacher", {
         studentId: selectedStudent._id,
         teacherId: teacherId,
       });
-      showToast("Teacher assigned successfully");
+      showToast(response.data.message || "Teacher assigned successfully");
       setShowAssignModal(false);
       fetchAll();
     } catch (err) {
-      showToast("Error assigning teacher", "error");
+      const errorMsg = err.response?.data?.message || "Error assigning teacher";
+      showToast(errorMsg, "error");
     }
   };
 
-  // Get unique list of users who added students
+  // 🆕 Export Functions
+  const exportSingleCSV = async (student) => {
+    try {
+      const response = await api.get(`/export/student/${student._id}/csv`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${student.name}_data.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded ${student.name}'s data as CSV`, "success");
+    } catch (err) {
+      console.error("Error exporting CSV:", err);
+      showToast("Error exporting CSV", "error");
+    }
+  };
+
+  const exportSinglePDF = async (student) => {
+    try {
+      const response = await api.get(`/export/student/${student._id}/pdf`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${student.name}_data.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded ${student.name}'s data as PDF`, "success");
+    } catch (err) {
+      console.error("Error exporting PDF:", err);
+      showToast("Error exporting PDF", "error");
+    }
+  };
+
+  const exportAllCSV = async () => {
+    try {
+      const response = await api.get("/export/all-students/csv", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "all_students_data.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded all students data as CSV`, "success");
+    } catch (err) {
+      console.error("Error exporting all CSV:", err);
+      showToast("Error exporting all CSV", "error");
+    }
+  };
+
+  const exportAllPDF = async () => {
+    try {
+      const response = await api.get("/export/all-students/pdf", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "all_students_report.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast(`✅ Downloaded all students report as PDF`, "success");
+    } catch (err) {
+      console.error("Error exporting all PDF:", err);
+      showToast("Error exporting all PDF", "error");
+    }
+  };
+
   const addedByOptions = [
     ...new Set(students.map((s) => s.addedBy?._id).filter(Boolean)),
   ].map((id) => {
@@ -258,6 +405,8 @@ export default function ManageStudents() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: "10px",
         }}
       >
         <div>
@@ -271,11 +420,31 @@ export default function ManageStudents() {
               `Students enrolled in your subject${(user?.subjects || []).length !== 1 ? "s" : ""}: ${(user?.subjects || []).join(", ")}`}
           </p>
         </div>
-        {canAddStudents && (
-          <button className="btn btn-primary" onClick={openAdd}>
-            + Add Student
-          </button>
-        )}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {(isAdmin || isTeacher || isCounsellor) && students.length > 0 && (
+            <>
+              <button
+                className="btn btn-success btn-sm"
+                onClick={exportAllCSV}
+                style={{ background: "#059669", color: "white" }}
+              >
+                📥 CSV All
+              </button>
+              <button
+                className="btn btn-success btn-sm"
+                onClick={exportAllPDF}
+                style={{ background: "#2563eb", color: "white" }}
+              >
+                📄 PDF All
+              </button>
+            </>
+          )}
+          {canAddStudents && (
+            <button className="btn btn-primary" onClick={openAdd}>
+              + Add Student
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card">
@@ -292,7 +461,7 @@ export default function ManageStudents() {
         >
           <input
             className="form-control"
-            placeholder="🔍 Search by name, roll no, or subject..."
+            placeholder="🔍 Search by name, email, father name, or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ maxWidth: "280px" }}
@@ -314,7 +483,6 @@ export default function ManageStudents() {
             </select>
           )}
 
-          {/* Admin filter for "Added By" */}
           {isAdmin && addedByOptions.length > 0 && (
             <select
               className="form-control"
@@ -379,32 +547,27 @@ export default function ManageStudents() {
             <table>
               <thead>
                 <tr>
-                  <th>Roll No.</th>
                   <th>Name</th>
+                  <th>Father's Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
                   <th>Enrolled Subjects</th>
+                  <th>Fee Details</th>
                   <th>Added By</th>
                   <th>Created Date</th>
                   {isAdmin && <th>Assigned Teacher</th>}
-                  {canAddStudents && <th>Actions</th>}
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((s) => (
                   <tr key={s._id}>
                     <td>
-                      <span className="roll-badge">{s.rollNumber}</span>
-                    </td>
-                    <td>
                       <strong>{s.name}</strong>
-                      {s.class && (
-                        <div
-                          style={{ fontSize: "11px", color: "var(--gray-500)" }}
-                        >
-                          Class: {s.class}
-                          {s.section ? `-${s.section}` : ""}
-                        </div>
-                      )}
                     </td>
+                    <td>{s.fatherName || "N/A"}</td>
+                    <td>{s.email}</td>
+                    <td>{s.phone}</td>
                     <td>
                       <div className="subject-tags-inline">
                         {(s.subjects || []).length > 0 ? (
@@ -430,6 +593,31 @@ export default function ManageStudents() {
                     </td>
                     <td>
                       <div style={{ fontSize: "13px" }}>
+                        <div>
+                          <span style={{ fontWeight: "600" }}>Total:</span> ₹
+                          {s.totalFee || 0}
+                        </div>
+                        <div>
+                          <span style={{ fontWeight: "600", color: "#16a34a" }}>
+                            Paid:
+                          </span>{" "}
+                          ₹{s.paidAmount || 0}
+                        </div>
+                        <div>
+                          <span
+                            style={{
+                              fontWeight: "600",
+                              color: s.dueAmount > 0 ? "#dc2626" : "#16a34a",
+                            }}
+                          >
+                            Due:
+                          </span>
+                          ₹{s.dueAmount || 0}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: "13px" }}>
                         <div>{s.addedBy?.name || "Unknown"}</div>
                         <div
                           style={{ fontSize: "11px", color: "var(--gray-500)" }}
@@ -444,25 +632,51 @@ export default function ManageStudents() {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
                           })
                         : "—"}
                     </td>
                     {isAdmin && (
                       <td>
                         {s.teacher ? (
-                          <span
+                          <div
                             style={{
-                              fontSize: "12px",
-                              color: "var(--success)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              flexWrap: "wrap",
                             }}
                           >
-                            ✓ {s.teacher?.name || "Assigned"}
-                          </span>
+                            <span
+                              style={{
+                                fontSize: "12px",
+                                color: "var(--success)",
+                                background: "#d1fae5",
+                                padding: "2px 10px",
+                                borderRadius: "12px",
+                              }}
+                            >
+                              ✓ {s.teacher?.name || "Assigned"}
+                            </span>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => openAssignTeacher(s)}
+                              style={{ padding: "2px 6px", fontSize: "10px" }}
+                              title="Change Teacher"
+                            >
+                              🔄 Change
+                            </button>
+                            <button
+                              className="btn btn-danger btn-sm"
+                              onClick={() => handleRemoveTeacher(s)}
+                              style={{ padding: "2px 6px", fontSize: "10px" }}
+                              title="Remove Teacher"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         ) : (
                           <button
-                            className="btn btn-outline btn-sm"
+                            className="btn btn-primary btn-sm"
                             onClick={() => openAssignTeacher(s)}
                           >
                             Assign Teacher
@@ -470,32 +684,62 @@ export default function ManageStudents() {
                         )}
                       </td>
                     )}
-                    {canAddStudents && (
-                      <td>
-                        <div
+                    <td>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "4px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={() => exportSingleCSV(s)}
                           style={{
-                            display: "flex",
-                            gap: "6px",
-                            flexWrap: "wrap",
+                            padding: "2px 8px",
+                            fontSize: "11px",
+                            background: "#059669",
+                            color: "white",
                           }}
+                          title="Download CSV"
                         >
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => openEdit(s)}
-                          >
-                            Edit
-                          </button>
-                          {isAdmin && (
+                          📥 CSV
+                        </button>
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={() => exportSinglePDF(s)}
+                          style={{
+                            padding: "2px 8px",
+                            fontSize: "11px",
+                            background: "#2563eb",
+                            color: "white",
+                          }}
+                          title="Download PDF"
+                        >
+                          📄 PDF
+                        </button>
+                        {canAddStudents && (
+                          <>
                             <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleDelete(s._id, s.name)}
+                              className="btn btn-outline btn-sm"
+                              onClick={() => openEdit(s)}
+                              style={{ padding: "2px 8px", fontSize: "11px" }}
                             >
-                              Remove
+                              Edit
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
+                            {isAdmin && (
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleDelete(s._id, s.name)}
+                                style={{ padding: "2px 8px", fontSize: "11px" }}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -535,25 +779,41 @@ export default function ManageStudents() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Roll Number *</label>
+              <label className="form-label">Father's Name *</label>
               <input
                 className="form-control"
-                placeholder="e.g. CS2024001"
-                value={form.rollNumber}
+                placeholder="e.g. Mr. Suresh Verma"
+                value={form.fatherName}
                 onChange={(e) =>
-                  setForm({ ...form, rollNumber: e.target.value })
+                  setForm({ ...form, fatherName: e.target.value })
                 }
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Email (optional)</label>
+              <label className="form-label">Email *</label>
               <input
                 className="form-control"
                 type="email"
                 placeholder="student@email.com"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, email: e.target.value });
+                }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Phone *</label>
+              <input
+                className="form-control"
+                placeholder="e.g. 9876543210"
+                value={form.phone}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  setForm({ ...form, phone: value });
+                }}
+                maxLength="10"
               />
             </div>
 
@@ -566,34 +826,56 @@ export default function ManageStudents() {
               }}
             >
               <div className="form-group">
-                <label className="form-label">Class</label>
+                <label className="form-label">Total Fee (₹)</label>
                 <input
+                  type="number"
                   className="form-control"
-                  placeholder="e.g. 10th"
-                  value={form.class}
-                  onChange={(e) => setForm({ ...form, class: e.target.value })}
+                  placeholder="e.g. 25000"
+                  value={form.totalFee}
+                  min="0"
+                  onChange={(e) => {
+                    const total = Number(e.target.value) || 0;
+                    setForm({
+                      ...form,
+                      totalFee: total,
+                    });
+                  }}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Section</label>
+                <label className="form-label">Paid Amount (₹)</label>
                 <input
+                  type="number"
                   className="form-control"
-                  placeholder="e.g. A"
-                  value={form.section}
-                  onChange={(e) =>
-                    setForm({ ...form, section: e.target.value })
-                  }
+                  placeholder="e.g. 12500"
+                  value={form.paidAmount}
+                  min="0"
+                  onChange={(e) => {
+                    const paid = Number(e.target.value) || 0;
+                    setForm({
+                      ...form,
+                      paidAmount: paid,
+                    });
+                  }}
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Phone</label>
+              <label className="form-label">Due Amount (₹)</label>
               <input
+                type="number"
                 className="form-control"
-                placeholder="e.g. 9876543210"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                value={(form.totalFee || 0) - (form.paidAmount || 0)}
+                disabled
+                style={{
+                  background: "#f3f4f6",
+                  fontWeight: "bold",
+                  color:
+                    (form.totalFee || 0) - (form.paidAmount || 0) > 0
+                      ? "#dc2626"
+                      : "#16a34a",
+                }}
               />
             </div>
 
@@ -606,7 +888,7 @@ export default function ManageStudents() {
                   marginBottom: "8px",
                 }}
               >
-                Click to toggle subjects
+                Click to toggle subjects (auto-capitalized)
               </p>
 
               {allSubjects.length > 0 && (
@@ -651,9 +933,12 @@ export default function ManageStudents() {
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
                   className="form-control"
-                  placeholder="Type a custom subject name..."
+                  placeholder="Type a custom subject name (auto-capitalized)..."
                   value={subjectInput}
-                  onChange={(e) => setSubjectInput(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+                    setSubjectInput(value);
+                  }}
                   onKeyDown={(e) =>
                     e.key === "Enter" &&
                     (e.preventDefault(), addCustomSubject())
@@ -733,7 +1018,7 @@ export default function ManageStudents() {
         </div>
       )}
 
-      {/* Assign Teacher Modal */}
+      {/* Assign/Change Teacher Modal with Subject Validation */}
       {isAdmin && showAssignModal && selectedStudent && (
         <div
           className="modal-overlay"
@@ -742,11 +1027,12 @@ export default function ManageStudents() {
           <div
             className="modal"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "500px" }}
+            style={{ maxWidth: "650px" }}
           >
             <div className="modal-header">
               <h3 className="modal-title">
-                Assign Teacher to {selectedStudent.name}
+                {selectedStudent.teacher ? "Change Teacher" : "Assign Teacher"}{" "}
+                for {selectedStudent.name}
               </h3>
               <button
                 className="modal-close"
@@ -756,20 +1042,107 @@ export default function ManageStudents() {
               </button>
             </div>
 
-            <p
-              style={{
-                fontSize: "13px",
-                color: "var(--text-muted)",
-                marginBottom: "12px",
-              }}
-            >
-              Select a teacher to assign to this student
-            </p>
+            {/* Current Teacher Info */}
+            {selectedStudent.teacher && (
+              <div
+                style={{
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  borderRadius: "8px",
+                  border: "1px solid #bbf7d0",
+                  marginBottom: "12px",
+                }}
+              >
+                <strong>Current Teacher:</strong>
+                <span style={{ marginLeft: "8px", fontWeight: "600" }}>
+                  {selectedStudent.teacher.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--gray-500)",
+                    marginLeft: "8px",
+                  }}
+                >
+                  (
+                  {selectedStudent.teacher.subjects?.join(", ") ||
+                    "No subjects"}
+                  )
+                </span>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={async () => {
+                    if (
+                      window.confirm(
+                        `Remove teacher "${selectedStudent.teacher.name}" from ${selectedStudent.name}?`,
+                      )
+                    ) {
+                      try {
+                        await api.delete(
+                          `/admin/students/${selectedStudent._id}/teacher`,
+                        );
+                        showToast(
+                          `✅ Teacher removed from ${selectedStudent.name}`,
+                        );
+                        setShowAssignModal(false);
+                        fetchAll();
+                      } catch (err) {
+                        showToast("Error removing teacher", "error");
+                      }
+                    }
+                  }}
+                  style={{
+                    marginLeft: "12px",
+                    padding: "2px 10px",
+                    fontSize: "11px",
+                  }}
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            )}
+
+            <div style={{ marginBottom: "12px" }}>
+              <div
+                style={{
+                  fontSize: "13px",
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  borderRadius: "8px",
+                  border: "1px solid #bbf7d0",
+                  marginBottom: "8px",
+                }}
+              >
+                <strong>📚 Student Subjects:</strong>
+                <span style={{ marginLeft: "8px" }}>
+                  {selectedStudent.subjects?.length > 0
+                    ? selectedStudent.subjects.join(", ")
+                    : "No subjects assigned"}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  padding: "8px 14px",
+                  background: "#fef3c7",
+                  borderRadius: "8px",
+                  border: "1px solid #fcd34d",
+                }}
+              >
+                <strong>⚠️ Note:</strong> Only teachers with matching subjects
+                will be shown.
+                <br />
+                <span style={{ fontSize: "11px", color: "var(--gray-500)" }}>
+                  Teacher must have at least one subject that matches student's
+                  subjects.
+                </span>
+              </div>
+            </div>
 
             <div className="form-group">
               <input
                 className="form-control"
-                placeholder="🔍 Search teachers..."
+                placeholder="🔍 Search teachers by name..."
                 onChange={(e) => {
                   const searchTerm = e.target.value.toLowerCase();
                   const teacherItems =
@@ -783,41 +1156,211 @@ export default function ManageStudents() {
                 }}
                 style={{ marginBottom: "12px" }}
               />
-              <div style={{ maxHeight: "300px", overflowY: "auto" }}>
-                {teachers
-                  .filter((t) => t._id !== selectedStudent.teacher?._id)
-                  .map((teacher) => (
-                    <div
-                      key={teacher._id}
-                      className="teacher-item"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 14px",
-                        borderBottom: "1px solid var(--gray-100)",
-                        cursor: "pointer",
-                        transition: "background 0.2s",
-                      }}
-                      onClick={() => handleAssignTeacher(teacher._id)}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = "var(--gray-50)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
-                    >
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{teacher.name}</div>
+
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "var(--gray-500)",
+                  marginBottom: "8px",
+                }}
+              >
+                Showing{" "}
+                {
+                  teachers.filter((t) => {
+                    const studentSubjects = (
+                      selectedStudent.subjects || []
+                    ).map((s) => s.toUpperCase());
+                    const teacherSubjects = (t.subjects || []).map((s) =>
+                      s.toUpperCase(),
+                    );
+                    return studentSubjects.some((sub) =>
+                      teacherSubjects.includes(sub),
+                    );
+                  }).length
+                }{" "}
+                matching teachers
+              </div>
+
+              <div
+                style={{
+                  maxHeight: "350px",
+                  overflowY: "auto",
+                  border: "1px solid var(--gray-200)",
+                  borderRadius: "8px",
+                }}
+              >
+                {teachers.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "20px",
+                      textAlign: "center",
+                      color: "var(--gray-500)",
+                    }}
+                  >
+                    No teachers available. Please add teachers first.
+                  </div>
+                ) : (
+                  teachers
+                    .filter((t) => t._id !== selectedStudent.teacher?._id)
+                    .map((teacher) => {
+                      const studentSubjects = (
+                        selectedStudent.subjects || []
+                      ).map((s) => s.toUpperCase().trim());
+                      const teacherSubjects = (teacher.subjects || []).map(
+                        (s) => s.toUpperCase().trim(),
+                      );
+
+                      const matchingSubjects = studentSubjects.filter((sub) =>
+                        teacherSubjects.includes(sub),
+                      );
+                      const hasMatchingSubject = matchingSubjects.length > 0;
+                      const isCurrentlyAssigned =
+                        selectedStudent.teacher?._id === teacher._id;
+
+                      return (
                         <div
-                          style={{ fontSize: "12px", color: "var(--gray-500)" }}
+                          key={teacher._id}
+                          className="teacher-item"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "12px 16px",
+                            borderBottom: "1px solid var(--gray-100)",
+                            cursor:
+                              hasMatchingSubject && !isCurrentlyAssigned
+                                ? "pointer"
+                                : "default",
+                            opacity: isCurrentlyAssigned
+                              ? 0.6
+                              : hasMatchingSubject
+                                ? 1
+                                : 0.5,
+                            transition: "background 0.2s",
+                            background: isCurrentlyAssigned
+                              ? "#f3f4f6"
+                              : hasMatchingSubject
+                                ? "transparent"
+                                : "#fafafa",
+                          }}
+                          onClick={() => {
+                            if (hasMatchingSubject && !isCurrentlyAssigned) {
+                              handleAssignTeacher(teacher._id);
+                            }
+                          }}
+                          onMouseEnter={(e) => {
+                            if (hasMatchingSubject && !isCurrentlyAssigned) {
+                              e.currentTarget.style.background =
+                                "var(--gray-50)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (hasMatchingSubject && !isCurrentlyAssigned) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
                         >
-                          {teacher.subjects?.join(", ") || "No subjects"}
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              {teacher.name}
+                              {isCurrentlyAssigned && (
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#16a34a",
+                                    background: "#d1fae5",
+                                    padding: "2px 10px",
+                                    borderRadius: "12px",
+                                  }}
+                                >
+                                  Currently Assigned
+                                </span>
+                              )}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "var(--gray-500)",
+                                marginTop: "2px",
+                              }}
+                            >
+                              <span style={{ fontWeight: "500" }}>
+                                Teaches:
+                              </span>
+                              {teacher.subjects?.length > 0
+                                ? teacher.subjects.join(", ")
+                                : "No subjects assigned"}
+                            </div>
+                            {hasMatchingSubject && !isCurrentlyAssigned && (
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#16a34a",
+                                  marginTop: "2px",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                ✅ Matching subjects:{" "}
+                                {matchingSubjects.join(", ")}
+                              </div>
+                            )}
+                            {!hasMatchingSubject && !isCurrentlyAssigned && (
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#dc2626",
+                                  marginTop: "2px",
+                                }}
+                              >
+                                ⚠️ No matching subjects
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    color: "var(--gray-400)",
+                                    marginLeft: "4px",
+                                    fontStyle: "italic",
+                                  }}
+                                >
+                                  (Student:{" "}
+                                  {studentSubjects.join(", ") || "None"})
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            className={`btn ${isCurrentlyAssigned ? "btn-outline" : "btn-primary"} btn-sm`}
+                            disabled={
+                              !hasMatchingSubject || isCurrentlyAssigned
+                            }
+                            style={{
+                              opacity:
+                                hasMatchingSubject && !isCurrentlyAssigned
+                                  ? 1
+                                  : 0.5,
+                              cursor:
+                                hasMatchingSubject && !isCurrentlyAssigned
+                                  ? "pointer"
+                                  : "not-allowed",
+                              minWidth: "70px",
+                            }}
+                          >
+                            {isCurrentlyAssigned
+                              ? "✅ Assigned"
+                              : hasMatchingSubject
+                                ? "Assign"
+                                : "No Match"}
+                          </button>
                         </div>
-                      </div>
-                      <button className="btn btn-primary btn-sm">Assign</button>
-                    </div>
-                  ))}
+                      );
+                    })
+                )}
               </div>
             </div>
 

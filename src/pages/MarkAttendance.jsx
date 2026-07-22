@@ -6,6 +6,8 @@ import "../css/MarkAttendance.css";
 export default function MarkAttendance() {
   const { user } = useAuth();
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [subject, setSubject] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [attendance, setAttendance] = useState({});
@@ -21,10 +23,11 @@ export default function MarkAttendance() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Fetch only students enrolled in the selected subject
+  // Fetch only students assigned to this teacher with matching subjects
   useEffect(() => {
     if (!subject) {
       setStudents([]);
+      setFilteredStudents([]);
       setAttendance({});
       return;
     }
@@ -33,20 +36,46 @@ export default function MarkAttendance() {
       .get(`/students?subject=${encodeURIComponent(subject)}`)
       .then((r) => {
         console.log("Students for subject:", r.data);
-        setStudents(r.data);
+        // Filter to only show students assigned to this teacher
+        const assignedStudents = r.data.filter(
+          (s) => s.teacher?._id === user._id || s.teacher === user._id,
+        );
+        setStudents(assignedStudents);
+        setFilteredStudents(assignedStudents);
         // Initialize attendance for all students
         const map = {};
-        r.data.forEach((s) => {
+        assignedStudents.forEach((s) => {
           map[s._id] = "absent";
         });
         setAttendance(map);
+        // Reset search when subject changes
+        setSearchTerm("");
       })
       .catch((err) => {
         console.error("Error fetching students:", err);
         showToast("Error fetching students", "error");
       })
       .finally(() => setLoading(false));
-  }, [subject]);
+  }, [subject, user._id]);
+
+  // Filter students when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredStudents(students);
+      return;
+    }
+    const search = searchTerm.toLowerCase().trim();
+    const filtered = students.filter((s) => {
+      return (
+        s.name.toLowerCase().includes(search) ||
+        s.email?.toLowerCase().includes(search) ||
+        s.fatherName?.toLowerCase().includes(search) ||
+        s.phone?.includes(search) ||
+        s.rollNumber?.toLowerCase().includes(search)
+      );
+    });
+    setFilteredStudents(filtered);
+  }, [searchTerm, students]);
 
   // Load existing attendance when subject + date changes
   useEffect(() => {
@@ -99,7 +128,7 @@ export default function MarkAttendance() {
       return;
     }
     if (students.length === 0) {
-      showToast("No enrolled students found for this subject", "error");
+      showToast("No assigned students found for this subject", "error");
       return;
     }
 
@@ -146,6 +175,12 @@ export default function MarkAttendance() {
   const absentCount = students.length - presentCount;
   const isEditing = existingRecords.length > 0;
 
+  // Get filtered present/absent counts
+  const filteredPresentCount = filteredStudents.filter(
+    (s) => attendance[s._id] === "present",
+  ).length;
+  const filteredAbsentCount = filteredStudents.length - filteredPresentCount;
+
   return (
     <div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
@@ -153,7 +188,7 @@ export default function MarkAttendance() {
       <div className="page-header">
         <h1 className="page-title">Mark Attendance</h1>
         <p className="page-subtitle">
-          Select a subject and date — only enrolled students will appear
+          Select a subject — only students assigned to you will appear
         </p>
       </div>
 
@@ -205,20 +240,20 @@ export default function MarkAttendance() {
             <div className="empty-state" style={{ marginTop: "24px" }}>
               <div className="empty-icon">📋</div>
               <p>
-                No students are enrolled in <strong>{subject}</strong> yet.
+                No students assigned to you for <strong>{subject}</strong>.
               </p>
               <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                Go to Students and add <strong>{subject}</strong> as a subject
-                for the relevant students.
+                Students need to be assigned to you by an admin and must have{" "}
+                <strong>{subject}</strong> as a subject.
               </p>
             </div>
           ) : (
             <>
-              {/* Summary bar */}
+              {/* Summary bar with search */}
               <div className="attendance-summary">
                 <div className="summary-stat">
                   <span className="summary-num">{students.length}</span>
-                  <span className="summary-label">Enrolled</span>
+                  <span className="summary-label">Assigned Students</span>
                 </div>
                 <div className="summary-stat present">
                   <span className="summary-num">{presentCount}</span>
@@ -244,52 +279,234 @@ export default function MarkAttendance() {
                 </div>
               </div>
 
+              {/* 🆕 Search Bar */}
+              <div
+                className="card"
+                style={{ padding: "12px 16px", marginBottom: "12px" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{ flex: 1, minWidth: "200px", position: "relative" }}
+                  >
+                    <input
+                      className="form-control"
+                      placeholder="🔍 Search students by name, email, phone or roll number..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{ paddingRight: "40px" }}
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        style={{
+                          position: "absolute",
+                          right: "8px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "none",
+                          border: "none",
+                          fontSize: "16px",
+                          cursor: "pointer",
+                          color: "var(--gray-500)",
+                          padding: "4px 8px",
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--gray-600)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {searchTerm ? (
+                      <span>
+                        Found <strong>{filteredStudents.length}</strong> of{" "}
+                        {students.length} students
+                        {filteredStudents.length !== students.length && (
+                          <button
+                            onClick={() => setSearchTerm("")}
+                            style={{
+                              marginLeft: "8px",
+                              color: "var(--primary)",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Clear filter
+                          </button>
+                        )}
+                      </span>
+                    ) : (
+                      <span>Showing all {students.length} students</span>
+                    )}
+                  </div>
+                  {searchTerm && filteredStudents.length === 0 && (
+                    <span style={{ color: "var(--danger)", fontSize: "13px" }}>
+                      No students found matching "{searchTerm}"
+                    </span>
+                  )}
+                </div>
+                {/* 🆕 Filtered summary */}
+                {searchTerm &&
+                  filteredStudents.length > 0 &&
+                  filteredStudents.length !== students.length && (
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        display: "flex",
+                        gap: "16px",
+                        fontSize: "12px",
+                        color: "var(--gray-500)",
+                      }}
+                    >
+                      <span>
+                        Filtered: <strong>{filteredStudents.length}</strong>{" "}
+                        students
+                      </span>
+                      <span>
+                        Present:{" "}
+                        <strong style={{ color: "var(--success)" }}>
+                          {filteredPresentCount}
+                        </strong>
+                      </span>
+                      <span>
+                        Absent:{" "}
+                        <strong style={{ color: "var(--danger)" }}>
+                          {filteredAbsentCount}
+                        </strong>
+                      </span>
+                    </div>
+                  )}
+              </div>
+
               {/* Student list */}
               <div className="card" style={{ padding: 0, overflow: "hidden" }}>
                 <div className="student-list">
-                  {students.map((s, i) => {
-                    const status = attendance[s._id] || "absent";
-                    return (
-                      <div key={s._id} className={`student-row ${status}`}>
-                        <div className="student-index">{i + 1}</div>
-                        <div className="student-info">
-                          <div className="student-name">{s.name}</div>
-                          <div className="student-meta">
-                            {s.rollNumber}
-                            {(s.subjects || []).filter((sub) => sub !== subject)
-                              .length > 0 && (
-                              <span
-                                style={{
-                                  marginLeft: "6px",
-                                  fontSize: "11px",
-                                  color: "var(--text-muted)",
-                                }}
-                              >
-                                · Also:{" "}
-                                {(s.subjects || [])
-                                  .filter((sub) => sub !== subject)
-                                  .join(", ")}
+                  {filteredStudents.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "40px",
+                        textAlign: "center",
+                        color: "var(--gray-500)",
+                      }}
+                    >
+                      <div style={{ fontSize: "32px", marginBottom: "8px" }}>
+                        🔍
+                      </div>
+                      <p>
+                        No students found matching "
+                        <strong>{searchTerm}</strong>"
+                      </p>
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="btn btn-outline btn-sm"
+                        style={{ marginTop: "8px" }}
+                      >
+                        Clear Search
+                      </button>
+                    </div>
+                  ) : (
+                    filteredStudents.map((s, i) => {
+                      const status = attendance[s._id] || "absent";
+                      // Highlight search match
+                      const highlightText = (text, search) => {
+                        if (!search.trim()) return text;
+                        const regex = new RegExp(`(${search.trim()})`, "gi");
+                        const parts = String(text).split(regex);
+                        return parts.map((part, index) =>
+                          regex.test(part) ? (
+                            <mark
+                              key={index}
+                              style={{
+                                background: "var(--primary-bg)",
+                                padding: "0 2px",
+                                borderRadius: "2px",
+                              }}
+                            >
+                              {part}
+                            </mark>
+                          ) : (
+                            part
+                          ),
+                        );
+                      };
+
+                      return (
+                        <div key={s._id} className={`student-row ${status}`}>
+                          <div className="student-index">{i + 1}</div>
+                          <div className="student-info">
+                            <div className="student-name">
+                              {highlightText(s.name, searchTerm)}
+                            </div>
+                            <div className="student-meta">
+                              <span className="roll-badge-sm">
+                                {s.rollNumber || "N/A"}
                               </span>
-                            )}
+                              <span style={{ marginLeft: "6px" }}>
+                                {highlightText(s.email, searchTerm)}
+                              </span>
+                              {s.fatherName && (
+                                <span
+                                  style={{
+                                    marginLeft: "6px",
+                                    fontSize: "11px",
+                                    color: "var(--text-muted)",
+                                  }}
+                                >
+                                  • Father:{" "}
+                                  {highlightText(s.fatherName, searchTerm)}
+                                </span>
+                              )}
+                              {(s.subjects || []).filter(
+                                (sub) => sub !== subject,
+                              ).length > 0 && (
+                                <span
+                                  style={{
+                                    marginLeft: "6px",
+                                    fontSize: "11px",
+                                    color: "var(--text-muted)",
+                                  }}
+                                >
+                                  · Also:{" "}
+                                  {(s.subjects || [])
+                                    .filter((sub) => sub !== subject)
+                                    .join(", ")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="attendance-toggle">
+                            <button
+                              className={`toggle-btn present-btn ${status === "present" ? "active" : ""}`}
+                              onClick={() => toggle(s._id, "present")}
+                            >
+                              P
+                            </button>
+                            <button
+                              className={`toggle-btn absent-btn ${status === "absent" ? "active" : ""}`}
+                              onClick={() => toggle(s._id, "absent")}
+                            >
+                              A
+                            </button>
                           </div>
                         </div>
-                        <div className="attendance-toggle">
-                          <button
-                            className={`toggle-btn present-btn ${status === "present" ? "active" : ""}`}
-                            onClick={() => toggle(s._id, "present")}
-                          >
-                            P
-                          </button>
-                          <button
-                            className={`toggle-btn absent-btn ${status === "absent" ? "active" : ""}`}
-                            onClick={() => toggle(s._id, "absent")}
-                          >
-                            A
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
 

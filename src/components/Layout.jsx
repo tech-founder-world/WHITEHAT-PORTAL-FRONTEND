@@ -48,6 +48,7 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
+          exact: true, // Add this for dashboard
         },
         {
           path: "/admin/teachers",
@@ -68,7 +69,13 @@ export default function Layout() {
           description: "Manage students",
         },
         {
-          path: "/admin/projects", // Add this
+          path: "/admin/batches",
+          label: "Batches",
+          icon: "📚",
+          description: "Manage batches",
+        },
+        {
+          path: "/admin/projects",
           label: "Projects",
           icon: "📁",
           description: "Manage projects",
@@ -85,6 +92,12 @@ export default function Layout() {
           icon: "📝",
           description: "Manage evaluations",
         },
+        {
+          path: "/admin/placements",
+          label: "Placements",
+          icon: "💼",
+          description: "Manage placements",
+        },
       ];
     } else if (user?.role === "counsellor") {
       return [
@@ -93,30 +106,25 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
+          exact: true,
         },
         {
-          path: "/counsellor/batches", // Add this
+          path: "/counsellor/batches",
           label: "Batches",
           icon: "📚",
           description: "Manage batches",
+        },
+        {
+          path: "/counsellor/track",
+          label: "Student Tracker",
+          icon: "📊",
+          description: "Track & update students",
         },
         {
           path: "/counsellor/students",
           label: "Students",
           icon: "🎓",
           description: "Assigned students",
-        },
-        {
-          path: "/counsellor/history",
-          label: "History",
-          icon: "📋",
-          description: "Attendance history",
-        },
-        {
-          path: "/counsellor/evaluations",
-          label: "Evaluations",
-          icon: "📝",
-          description: "Student evaluations",
         },
       ];
     } else {
@@ -127,6 +135,7 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
+          exact: true,
         },
         {
           path: "/teacher/mark-attendance",
@@ -147,16 +156,22 @@ export default function Layout() {
           description: "Attendance history",
         },
         {
+          path: "/teacher/evaluations",
+          label: "Evaluations",
+          icon: "📝",
+          description: "Manage evaluations",
+        },
+        {
           path: "/teacher/projects",
           label: "Projects",
           icon: "📁",
           description: "Manage projects",
         },
         {
-          path: "/teacher/evaluations",
-          label: "Evaluations",
-          icon: "📝",
-          description: "Project evaluations",
+          path: "/teacher/batches",
+          label: "Batches",
+          icon: "📚",
+          description: "Manage batches",
         },
       ];
     }
@@ -173,10 +188,6 @@ export default function Layout() {
 
   const roleColor = getRoleColor();
 
-  // Debug: Log current path and user
-  console.log("Current user role:", user?.role);
-  console.log("Nav items:", navItems);
-
   return (
     <div className={`layout ${isSidebarCollapsed ? "collapsed" : ""}`}>
       {/* Mobile Header */}
@@ -190,7 +201,7 @@ export default function Layout() {
         </button>
         <div className="mobile-logo">
           <span className="logo-icon">🏫</span>
-          <span className="logo-text">WhiteHead</span>
+          <span className="logo-text">WhiteHat</span>
         </div>
         <div className="mobile-user">
           <div className="mobile-avatar" style={{ background: roleColor }}>
@@ -221,7 +232,7 @@ export default function Layout() {
               <span className="logo-icon">🏫</span>
             </div>
             <div className="logo-text">
-              <span className="logo-main">WhiteHead</span>
+              <span className="logo-main">WhiteHat</span>
               <span className="logo-sub">Coders</span>
             </div>
           </div>
@@ -261,6 +272,7 @@ export default function Layout() {
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.exact || false} // Add end prop for exact matching
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? "active" : ""}`
               }
@@ -301,7 +313,6 @@ export default function Layout() {
 
       <main className="main-content">
         <div className="content-wrapper">
-          {/* The Outlet renders the child route components here */}
           <Outlet />
         </div>
       </main>
