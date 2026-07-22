@@ -1,8 +1,6 @@
-/* src/css/Placement.css */
-
 .placement-page {
   padding: 30px;
-  background-color: #f9fafb; /* Light gray background */
+  background-color: #f9fafb;
   min-height: 100vh;
 }
 
@@ -26,7 +24,6 @@
   margin-bottom: 0;
 }
 
-/* Create Button */
 .create-btn {
   background: #f97316;
   color: white;
@@ -43,7 +40,6 @@
   background: #ea580c;
 }
 
-/* Search Bar */
 .search-box {
   width: 100%;
   padding: 12px 15px;
@@ -60,7 +56,6 @@
   border-color: #f97316;
 }
 
-/* Table Container */
 .table-card {
   background: white;
   border-radius: 12px;
@@ -88,11 +83,54 @@
   color: #1f2937;
 }
 
-.text-center {
-  text-align: center !important;
+/* Buttons */
+.btn-view, .btn-share, .btn-edit, .btn-delete, .btn-activate, .btn-deactivate {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  transition: 0.2s;
 }
 
-/* Modal Overlay */
+.btn-view {
+  background: #f3f4f6;
+  color: #374151;
+}
+.btn-view:hover { background: #e5e7eb; }
+
+.btn-share {
+  background: #ebf8ff;
+  color: #2b6cb0;
+}
+.btn-share:hover { background: #bee3f8; }
+
+.btn-edit {
+  background: #e9d8fd;
+  color: #44337a;
+}
+.btn-edit:hover { background: #d6bcfa; }
+
+.btn-delete {
+  background: #fed7d7;
+  color: #742a2a;
+}
+.btn-delete:hover { background: #fecaca; }
+
+.btn-activate {
+  background: #c6f6d5;
+  color: #22543d;
+}
+.btn-activate:hover { background: #9ae6b4; }
+
+.btn-deactivate {
+  background: #fefcbf;
+  color: #975a16;
+}
+.btn-deactivate:hover { background: #fde68a; }
+
+/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -104,15 +142,16 @@
   backdrop-filter: blur(3px);
 }
 
-/* Modal Box */
 .modal {
   background: white;
-  width: 700px;
   max-width: 95%;
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.3s ease;
+  overflow: auto;
+  max-height: 90vh;
+  width: 100%;
 }
 
 @keyframes fadeIn {
@@ -128,37 +167,30 @@
   margin-top: 0;
 }
 
-/* Modal Form Grid */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-.form-grid input,
-.modal textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 15px;
-  outline: none;
-  transition: border 0.2s;
-  font-family: inherit;
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0 8px;
 }
 
-.form-grid input:focus,
-.modal textarea:focus {
-  border-color: #f97316;
+.modal-close:hover {
+  color: #1f2937;
 }
 
-.modal textarea {
-  margin-top: 15px;
-  resize: vertical;
-  min-height: 80px;
+.modal-body {
+  overflow: auto;
 }
 
-/* Modal Actions */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -176,10 +208,7 @@
   color: #4b5563;
   transition: 0.2s;
 }
-
-.cancel-btn:hover {
-  background: #f3f4f6;
-}
+.cancel-btn:hover { background: #f3f4f6; }
 
 .save-btn {
   padding: 10px 24px;
@@ -191,226 +220,84 @@
   font-weight: 600;
   transition: 0.2s;
 }
+.save-btn:hover { background: #ea580c; }
+.save-btn:disabled { background: #fca5a5; cursor: not-allowed; }
 
-.save-btn:hover {
-  background: #ea580c;
-}
-
-.save-btn:disabled {
-  background: #fca5a5;
-  cursor: not-allowed;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .placement-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
-  }
-  
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-/* =========================================== */
-/* --- NEW: VIEW APPLICANTS MODAL STYLES --- */
-/* =========================================== */
-
-/* Custom Modal Overlay */
-.modal-applicants-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(4px);
-}
-
-/* Modal Container */
-.modal-applicants-content {
-  background: #ffffff;
-  width: 95%;
-  max-width: 1000px;
-  max-height: 85vh;
-  border-radius: 16px;
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Header */
-.modal-applicants-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f3f4f6;
-}
-
-.modal-applicants-header h3 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 22px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.modal-applicants-header h3 span {
-  color: #f97316;
-}
-
-.modal-applicants-close {
-  background: none;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-  color: #9ca3af;
-  transition: color 0.2s;
-  line-height: 1;
-}
-
-.modal-applicants-close:hover {
-  color: #1f2937;
-}
-
-/* Scrollable Body */
-.modal-applicants-body {
-  overflow-y: auto;
-  flex: 1;
-  padding-right: 5px;
-}
-
-/* Table Styles inside Modal */
-.modal-applicants-table {
+/* Applicants Table */
+.applicants-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
-  font-family: inherit;
+  font-size: 13px;
 }
 
-.modal-applicants-table thead tr {
+.applicants-table th {
   background: #f9fafb;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.applicants-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.applicants-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Interview Logs Table */
+.interview-logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.interview-logs-table th {
+  background: #f9fafb;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
   border-bottom: 2px solid #e5e7eb;
 }
 
-.modal-applicants-table th {
-  text-align: left;
-  padding: 14px 16px;
-  color: #4b5563;
-  font-weight: 600;
-}
-
-.modal-applicants-table tbody tr {
+.interview-logs-table td {
+  padding: 8px 12px;
   border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s;
 }
 
-.modal-applicants-table tbody tr:hover {
-  background-color: #f9fafb;
-}
-
-.modal-applicants-table td {
-  padding: 14px 16px;
-  color: #1f2937;
-}
-
-.modal-applicants-table .student-name {
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.modal-applicants-table .student-email {
-  color: #4b5563;
-}
-
-/* Branch Badge Pill */
-.branch-pill {
-  display: inline-block;
-  background: #fefcbf;
-  color: #854d0e;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-/* Empty State Text */
-.modal-empty-state {
-  color: #9ca3af;
-  text-align: center;
-  padding: 50px 0;
-  font-size: 16px;
-}
-
-/* --- COURSE TYPE PILLS --- */
 .course-pill {
-  display: inline-block;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
+  display: inline-block;
 }
 
 .course-pill.silver {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.course-pill.platinum {
   background: #e5e7eb;
   color: #374151;
 }
 
-.course-pill.platinum {
-  background: #e0e7ff;
-  color: #4338ca;
-}
-
 .course-pill.premium {
   background: #fef3c7;
-  color: #92400e;
+  color: #d97706;
 }
 
-/* --- FEES BADGE STYLES --- */
-.fees-pending {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.fees-paid {
-  color: #16a34a;
-  font-weight: 600;
-}
-
-.due-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.due-badge.clear {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.due-badge.due {
-  background: #fee2e2;
-  color: #991b1b;
+/* Responsive */
+@media (max-width: 768px) {
+  .placement-page { padding: 15px; }
+  .placement-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+  .placement-table td, .placement-table th { padding: 10px; font-size: 12px; }
+  .applicants-table { font-size: 11px; min-width: 800px; }
 }

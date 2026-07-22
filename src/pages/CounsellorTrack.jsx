@@ -4,256 +4,535 @@ import api from '../api';
 import '../css/CounsellorTrack.css';
 
 export default function CounsellorTrack() {
-  const { token } = useAuth();
-  const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Modal state
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [toast, setToast] = useState(null);
 
-  // Form for Counsellor to edit
-  const [editForm, setEditForm] = useState({
-    batchName: '',
-    courseType: 'Silver',
-    totalFees: 0,
-    feesPaid: 0,
-    joinedDate: '',
-    endedDate: '',
-    totalInterviewsGiven: 0,
-    totalInterviewsRejected: 0
-  });
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
-    fetchStudents();
+    fetchApplications();
   }, []);
 
-  const fetchStudents = async () => {
+  // Fetch REAL data from Placement Applications
+  const fetchApplications = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await api.get('/placement/applications/all'); 
-      setStudents(res.data);
-      setFilteredStudents(res.data);
+      console.log("📡 Fetching placement applications for counsellor...");
+      const response = await api.get("/placement/applications/all");
+      console.log("✅ Applications loaded:", response.data?.length || 0);
+      setApplications(response.data || []);
     } catch (err) {
-      console.error('Error fetching students:', err);
+      console.error("Error fetching applications:", err);
+      showToast("Error loading applications", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    const filtered = students.filter(student => 
-      student.studentName.toLowerCase().includes(term) ||
-      student.batchName?.toLowerCase().includes(term) ||
-      student.branch.toLowerCase().includes(term)
-    );
-    setFilteredStudents(filtered);
-  };
-
-  // --- OPEN EDIT MODAL ---
-  const openEditModal = (student) => {
-    setEditingStudent(student);
-    setEditForm({
-      batchName: student.batchName || '',
-      courseType: student.courseType || 'Silver',
-      totalFees: student.totalFees || 0,
-      feesPaid: student.feesPaid || 0,
-      joinedDate: student.joinedDate ? new Date(student.joinedDate).toISOString().split('T')[0] : '',
-      endedDate: student.endedDate ? new Date(student.endedDate).toISOString().split('T')[0] : '',
-      totalInterviewsGiven: student.totalInterviewsGiven || 0,
-      totalInterviewsRejected: student.totalInterviewsRejected || 0
+  const handleEditClick = (application) => {
+    setEditingId(application._id);
+    setEditData({
+      branch: application.branch || "",
+      courseType: application.courseType || "Silver",
+      totalFees: application.totalFees || 0,
+      feesPaid: application.feesPaid || 0,
+      feesPending: application.feesPending || 0,
+      joinedDate: application.joinedDate ? new Date(application.joinedDate).toISOString().split('T')[0] : "",
+      endedDate: application.endedDate ? new Date(application.endedDate).toISOString().split('T')[0] : "",
+      totalInterviewsGiven: application.totalInterviewsGiven || 0,
+      totalInterviewsRejected: application.totalInterviewsRejected || 0,
+      totalInterviewsSelected: application.totalInterviewsSelected || 0,
     });
-    setShowEditModal(true);
   };
 
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev, [name]: value }));
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditData({});
   };
 
-  // --- SAVE AND INSTANTLY UPDATE ---
-  const saveStudentDetails = async () => {
+  const handleInputChange = (e, field) => {
+    setEditData({
+      ...editData,
+      [field]: e.target.value,
+    });
+  };
+
+  const handleSaveEdit = async (applicationId) => {
     try {
-      await api.put(`/placement/applications/${editingStudent._id}/counsellor-update`, {
-        batchName: editForm.batchName,
-        courseType: editForm.courseType,
-        totalFees: editForm.totalFees,
-        feesPaid: editForm.feesPaid,
-        joinedDate: editForm.joinedDate,
-        endedDate: editForm.endedDate,
-        totalInterviewsGiven: Number(editForm.totalInterviewsGiven),
-        totalInterviewsRejected: Number(editForm.totalInterviewsRejected)
-      });
+      const payload = {
+        branch: editData.branch,
+        courseType: editData.courseType,
+        totalFees: Number(editData.totalFees) || 0,
+        feesPaid: Number(editData.feesPaid) || 0,
+        joinedDate: editData.joinedDate || null,
+        endedDate: editData.endedDate || null,
+        totalInterviewsGiven: Number(editData.totalInterviewsGiven) || 0,
+        totalInterviewsRejected: Number(editData.totalInterviewsRejected) || 0,
+      };
+
+      console.log("📦 Updating application:", payload);
+      const response = await api.put(`/placement/applications/${applicationId}/counsellor-update`, payload);
       
-      // ✅ INSTANTLY REFRESH DATA FOR BOTH ADMIN AND COUNSELLOR
-      fetchStudents();
-      setShowEditModal(false);
-      alert('✅ Student updated successfully!');
+      if (response.data.success) {
+        showToast("✅ Student updated successfully!");
+        setEditingId(null);
+        fetchApplications();
+      }
     } catch (err) {
-      console.error('Error updating student:', err);
-      alert('Error updating student. Please try again.');
+      console.error("Error updating application:", err);
+      showToast(err.response?.data?.message || "Error updating student", "error");
     }
   };
 
+  // Handle adding interview log
+  const handleAddInterview = async (applicationId, status, notes) => {
+    try {
+      const response = await api.post(`/placement/applications/${applicationId}/interview`, {
+        status,
+        notes
+      });
+      
+      if (response.data.success) {
+        showToast("✅ Interview logged successfully!");
+        fetchApplications();
+        // Refresh the modal data
+        if (selectedStudent) {
+          const updatedStudent = await api.get(`/placement/applications/${applicationId}`);
+          setSelectedStudent(updatedStudent.data);
+        }
+      }
+    } catch (err) {
+      console.error("Error adding interview:", err);
+      showToast(err.response?.data?.message || "Error logging interview", "error");
+    }
+  };
+
+  const viewStudentDetails = async (student) => {
+    try {
+      const response = await api.get(`/placement/applications/${student._id}`);
+      setSelectedStudent(response.data);
+      setShowInterviewModal(true);
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+      showToast('Error loading student details', 'error');
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return "N/A";
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const colors = {
+      pending: '#f59e0b',
+      shortlisted: '#3b82f6',
+      selected: '#22c55e',
+      rejected: '#ef4444',
+      interview_scheduled: '#8b5cf6'
+    };
+    return {
+      background: colors[status] || '#6b7280',
+      color: 'white'
+    };
+  };
+
+  const getCourseLabel = (type) => {
+    const labels = {
+      Silver: "🥈 Silver",
+      Platinum: "🥇 Platinum",
+      Premium: "👑 Premium",
+    };
+    return labels[type] || type || "Silver";
+  };
+
   return (
-    <div className="track-page">
-      <div className="track-header">
-        <div>
-          <h1 className="page-title">📊 Student Training Tracker</h1>
-          <p className="page-subtitle">Update batches, fees, and interview stats</p>
-        </div>
+    <div className="counsellor-track">
+      {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
+
+      <div className="page-header">
+        <h1 className="page-title">🎯 Student Tracker</h1>
+        <p className="page-subtitle">Track and update student placement applications</p>
+        <p style={{ fontSize: "14px", color: "var(--text-muted)", marginTop: "4px" }}>
+          📊 Total Students: {applications.length}
+        </p>
       </div>
 
-      {/* Search Bar */}
-      <div className="search-section">
-        <input 
-          type="text" 
-          placeholder="🔍 Search by name, batch, or branch..." 
-          value={searchTerm}
-          onChange={handleSearch}
-          className="search-input"
-        />
-      </div>
-
-      <div className="table-container">
+      <div className="card">
         {loading ? (
-          <div className="loading">Loading students...</div>
-        ) : filteredStudents.length === 0 ? (
+          <div className="loading-wrapper">
+            <div className="spinner" />
+            <p>Loading student data...</p>
+          </div>
+        ) : applications.length === 0 ? (
           <div className="empty-state">
-            <p>No students found matching your search.</p>
+            <div className="empty-icon">📋</div>
+            <p>No student applications found</p>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+              Students haven't submitted any placement forms yet
+            </p>
           </div>
         ) : (
-          <table className="track-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Batch</th>
-                <th>Course</th>
-                <th>Total Fees</th>
-                <th>Paid</th>
-                <th>Pending</th>
-                <th>Due</th>
-                <th>Joined</th>
-                <th>Ended</th>
-                <th>Interviews</th>
-                <th>Selected</th>
-                <th>Rejected</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.map((student) => (
-                <tr key={student._id}>
-                  <td><strong>{student.studentName}</strong></td>
-                  <td>{student.batchName || '-'}</td>
-                  <td>
-                    <span className={`course-badge ${student.courseType?.toLowerCase() || 'silver'}`}>
-                      {student.courseType || 'Silver'}
-                    </span>
-                  </td>
-                  <td>₹{student.totalFees || 0}</td>
-                  <td style={{ color: '#16a34a', fontWeight: '600' }}>₹{student.feesPaid || 0}</td>
-                  <td style={{ color: '#dc2626', fontWeight: '600' }}>₹{student.feesPending || 0}</td>
-                  <td>
-                    <span style={{ 
-                      background: student.dueClear ? '#d1fae5' : '#fee2e2', 
-                      color: student.dueClear ? '#065f46' : '#991b1b', 
-                      padding: '4px 12px', 
-                      borderRadius: '20px', 
-                      fontSize: '12px', 
-                      fontWeight: '600' 
-                    }}>
-                      {student.dueClear ? '✅ Clear' : '⚠️ Due'}
-                    </span>
-                  </td>
-                  <td>{student.joinedDate ? new Date(student.joinedDate).toLocaleDateString() : '-'}</td>
-                  <td>{student.endedDate ? new Date(student.endedDate).toLocaleDateString() : '-'}</td>
-                  <td className="text-center">{student.totalInterviewsGiven || 0}</td>
-                  <td className="text-center text-green">{student.totalInterviewsSelected || 0}</td>
-                  <td className="text-center text-red">{student.totalInterviewsRejected || 0}</td>
-                  <td>
-                    <span className={`status-pill ${student.status || 'active'}`}>
-                      {student.status || 'Active'}
-                    </span>
-                  </td>
-                  <td>
-                    <button onClick={() => openEditModal(student)} className="btn-edit-small">
-                      ✏️ Edit
-                    </button>
-                  </td>
+          <div className="table-responsive">
+            <table className="track-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Student Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Form</th>
+                  <th>Course</th>
+                  <th>Total Fees</th>
+                  <th>Paid</th>
+                  <th>Pending</th>
+                  <th>Joined</th>
+                  <th>Ended</th>
+                  <th>Interviews</th>
+                  <th>Selected</th>
+                  <th>Rejected</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {applications.map((app, index) => {
+                  const isEditing = editingId === app._id;
+
+                  if (isEditing) {
+                    return (
+                      <tr key={app._id} className="editing-row">
+                        <td>{index + 1}</td>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={app.studentName}
+                            disabled
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={app.studentEmail}
+                            disabled
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={app.studentPhone || "N/A"}
+                            disabled
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={app.placementForm?.formTitle || "N/A"}
+                            disabled
+                          />
+                        </td>
+                        <td>
+                          <select
+                            className="form-control form-control-sm"
+                            value={editData.courseType}
+                            onChange={(e) => handleInputChange(e, "courseType")}
+                          >
+                            <option value="Silver">Silver</option>
+                            <option value="Platinum">Platinum</option>
+                            <option value="Premium">Premium</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={editData.totalFees}
+                            onChange={(e) => handleInputChange(e, "totalFees")}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={editData.feesPaid}
+                            onChange={(e) => handleInputChange(e, "feesPaid")}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={editData.feesPending}
+                            disabled
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="date"
+                            className="form-control form-control-sm"
+                            value={editData.joinedDate}
+                            onChange={(e) => handleInputChange(e, "joinedDate")}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="date"
+                            className="form-control form-control-sm"
+                            value={editData.endedDate}
+                            onChange={(e) => handleInputChange(e, "endedDate")}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={editData.totalInterviewsGiven}
+                            onChange={(e) => handleInputChange(e, "totalInterviewsGiven")}
+                            min="0"
+                          />
+                        </td>
+                        <td style={{ color: "#16a34a", fontWeight: "bold" }}>
+                          {editData.totalInterviewsGiven - editData.totalInterviewsRejected}
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={editData.totalInterviewsRejected}
+                            onChange={(e) => handleInputChange(e, "totalInterviewsRejected")}
+                            min="0"
+                          />
+                        </td>
+                        <td>
+                          <span className="status-pill" style={{ background: '#f59e0b', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px' }}>
+                            {app.status || "pending"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="action-buttons">
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => handleSaveEdit(app._id)}
+                            >
+                              💾 Save
+                            </button>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={handleCancelEdit}
+                            >
+                              ✖ Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <tr 
+                      key={app._id} 
+                      onClick={() => viewStudentDetails(app)} 
+                      style={{ cursor: 'pointer' }}
+                      className="clickable-row"
+                    >
+                      <td>{index + 1}</td>
+                      <td><strong>{app.studentName}</strong></td>
+                      <td>{app.studentEmail}</td>
+                      <td>{app.studentPhone || "N/A"}</td>
+                      <td>{app.placementForm?.formTitle || "N/A"}</td>
+                      <td>
+                        <span className={`course-pill ${app.courseType?.toLowerCase() || "silver"}`}>
+                          {getCourseLabel(app.courseType)}
+                        </span>
+                      </td>
+                      <td>₹{app.totalFees || 0}</td>
+                      <td style={{ color: "#16a34a" }}>₹{app.feesPaid || 0}</td>
+                      <td style={{ color: (app.feesPending || 0) > 0 ? "#dc2626" : "#16a34a" }}>
+                        ₹{app.feesPending || 0}
+                      </td>
+                      <td>{formatDate(app.joinedDate)}</td>
+                      <td>{formatDate(app.endedDate)}</td>
+                      <td>{app.totalInterviewsGiven || 0}</td>
+                      <td style={{ color: "#16a34a", fontWeight: "bold" }}>
+                        {app.totalInterviewsSelected || 0}
+                      </td>
+                      <td style={{ color: "#dc2626" }}>{app.totalInterviewsRejected || 0}</td>
+                      <td>
+                        <span 
+                          className="status-pill" 
+                          style={{ 
+                            background: getStatusBadge(app.status).background, 
+                            color: 'white',
+                            padding: "4px 12px",
+                            borderRadius: "20px",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            display: "inline-block"
+                          }}
+                        >
+                          {app.status || "pending"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={(e) => { e.stopPropagation(); handleEditClick(app); }}
+                          >
+                            ✏️ Update
+                          </button>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={(e) => { e.stopPropagation(); viewStudentDetails(app); }}
+                          >
+                            📊 Details
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* --- EDIT MODAL (Exactly 8 Fields) --- */}
-      {showEditModal && editingStudent && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+      {/* Student Details & Interview Modal */}
+      {showInterviewModal && selectedStudent && (
+        <div className="modal-overlay" onClick={() => setShowInterviewModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
             <div className="modal-header">
-              <h3>✏️ Update Student</h3>
-              <button className="modal-close" onClick={() => setShowEditModal(false)}>×</button>
+              <h3 className="modal-title">📊 Student Details: <span style={{ color: '#f97316' }}>{selectedStudent.studentName}</span></h3>
+              <button className="modal-close" onClick={() => setShowInterviewModal(false)}>×</button>
             </div>
             <div className="modal-body">
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                
-                <div className="form-group">
-                  <label>Batch Name</label>
-                  <input type="text" name="batchName" value={editForm.batchName} onChange={handleEditChange} />
-                </div>
-
-                <div className="form-group">
-                  <label>Course Type</label>
-                  <select name="courseType" value={editForm.courseType} onChange={handleEditChange}>
-                    <option value="Silver">Silver</option>
-                    <option value="Platinum">Platinum</option>
-                    <option value="Premium">Premium</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Total Fees (₹)</label>
-                  <input type="number" name="totalFees" value={editForm.totalFees} onChange={handleEditChange} />
-                </div>
-
-                <div className="form-group">
-                  <label>Fees Paid (₹)</label>
-                  <input type="number" name="feesPaid" value={editForm.feesPaid} onChange={handleEditChange} />
-                </div>
-
-                <div className="form-group">
-                  <label>Joined Date</label>
-                  <input type="date" name="joinedDate" value={editForm.joinedDate} onChange={handleEditChange} />
-                </div>
-
-                <div className="form-group">
-                  <label>Ended Date</label>
-                  <input type="date" name="endedDate" value={editForm.endedDate} onChange={handleEditChange} />
-                </div>
-
-                <div className="form-group">
-                  <label>Total Interviews</label>
-                  <input type="number" name="totalInterviewsGiven" value={editForm.totalInterviewsGiven} onChange={handleEditChange} />
-                </div>
-
-                <div className="form-group">
-                  <label>Interviews Rejected</label>
-                  <input type="number" name="totalInterviewsRejected" value={editForm.totalInterviewsRejected} onChange={handleEditChange} />
-                </div>
-
+              {/* Student Info Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                <div><strong>Email:</strong> {selectedStudent.studentEmail}</div>
+                <div><strong>Phone:</strong> {selectedStudent.studentPhone}</div>
+                <div><strong>Father's Name:</strong> {selectedStudent.fatherName || 'N/A'}</div>
+                <div><strong>Course:</strong> {selectedStudent.courseType}</div>
+                <div><strong>Timing:</strong> {selectedStudent.courseTiming || 'N/A'}</div>
+                <div><strong>Branch:</strong> {selectedStudent.branch || 'N/A'}</div>
+                <div><strong>Total Fees:</strong> ₹{selectedStudent.totalFees || 0}</div>
+                <div><strong>Fees Paid:</strong> ₹{selectedStudent.feesPaid || 0}</div>
+                <div><strong>Fees Pending:</strong> ₹{selectedStudent.feesPending || 0}</div>
+                <div><strong>Joined:</strong> {formatDate(selectedStudent.joinedDate)}</div>
+                <div><strong>Ended:</strong> {formatDate(selectedStudent.endedDate)}</div>
+                <div><strong>Resume:</strong> {selectedStudent.resumeLink ? <a href={selectedStudent.resumeLink} target="_blank" rel="noopener noreferrer">🔗 View</a> : 'N/A'}</div>
               </div>
-              <p className="note">* Selected interviews are auto-calculated based on given and rejected counts.</p>
+
+              {/* Add Interview Section */}
+              <div style={{ marginBottom: '20px', borderTop: '1px solid #e5e7eb', paddingTop: '15px' }}>
+                <h4 style={{ margin: '0 0 10px 0' }}>➕ Add Interview Log</h4>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select 
+                    id="interviewStatus"
+                    className="form-control" 
+                    style={{ maxWidth: '180px' }}
+                  >
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="selected">Selected</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="interview_scheduled">Interview Scheduled</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                  <input 
+                    type="text" 
+                    id="interviewNotes"
+                    placeholder="Add notes..." 
+                    className="form-control" 
+                    style={{ flex: 1, minWidth: '150px' }}
+                  />
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => {
+                      const status = document.getElementById('interviewStatus').value;
+                      const notes = document.getElementById('interviewNotes').value;
+                      if (notes) {
+                        handleAddInterview(selectedStudent._id, status, notes);
+                        document.getElementById('interviewNotes').value = '';
+                      } else {
+                        showToast('Please add notes for the interview', 'error');
+                      }
+                    }}
+                  >
+                    ➕ Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Interview History */}
+              <h4 style={{ margin: '0 0 10px 0' }}>📋 Interview History</h4>
+              {selectedStudent.interviewLogs?.length === 0 ? (
+                <p style={{ color: '#6b7280' }}>No interview records yet.</p>
+              ) : (
+                <table className="interview-logs-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Notes</th>
+                      <th>Updated By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedStudent.interviewLogs?.map((log, idx) => (
+                      <tr key={idx}>
+                        <td>{new Date(log.date).toLocaleDateString()}</td>
+                        <td>
+                          <span style={{ 
+                            background: getStatusBadge(log.status).background, 
+                            color: 'white',
+                            padding: '2px 10px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}>
+                            {log.status}
+                          </span>
+                        </td>
+                        <td>{log.notes || '-'}</td>
+                        <td>{log.updatedBy?.name || 'System'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {/* Summary Stats */}
+              <div style={{ marginTop: '15px', display: 'flex', gap: '20px', flexWrap: 'wrap', borderTop: '1px solid #e5e7eb', paddingTop: '15px' }}>
+                <div><strong>Total Interviews:</strong> {selectedStudent.totalInterviewsGiven || 0}</div>
+                <div style={{ color: '#3b82f6' }}><strong>Shortlisted:</strong> {selectedStudent.totalInterviewsShortlisted || 0}</div>
+                <div style={{ color: '#16a34a' }}><strong>Selected:</strong> {selectedStudent.totalInterviewsSelected || 0}</div>
+                <div style={{ color: '#dc2626' }}><strong>Rejected:</strong> {selectedStudent.totalInterviewsRejected || 0}</div>
+              </div>
             </div>
             <div className="modal-actions">
-              <button onClick={() => setShowEditModal(false)} className="btn-secondary">Cancel</button>
-              <button onClick={saveStudentDetails} className="btn-primary">Save Changes</button>
+              <button onClick={() => setShowInterviewModal(false)} className="cancel-btn">Close</button>
             </div>
           </div>
         </div>
