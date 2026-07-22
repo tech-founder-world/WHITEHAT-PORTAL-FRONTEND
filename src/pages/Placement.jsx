@@ -6,7 +6,6 @@ import '../css/Placement.css';
 const API_BASE = 'http://localhost:5000/api';
 
 function Placement() {
-  // ✅ FIXED: Added 'user' here!
   const { token, user } = useAuth();
   
   // --- STATES ---
@@ -22,10 +21,24 @@ function Placement() {
   const [selectedApplicants, setSelectedApplicants] = useState([]);
   const [selectedPlacementTitle, setSelectedPlacementTitle] = useState('');
 
+  // --- STATES FOR COUNSELLOR EDIT MODAL ---
+  const [showCounsellorEditModal, setShowCounsellorEditModal] = useState(false);
+  const [editingCounsellorStudent, setEditingCounsellorStudent] = useState(null);
+  const [counsellorEditForm, setCounsellorEditForm] = useState({
+    batchName: '',
+    courseType: 'Silver',
+    totalFees: 0,
+    feesPaid: 0,
+    joinedDate: '',
+    endedDate: '',
+    totalInterviewsGiven: 0,
+    totalInterviewsRejected: 0
+  });
+
   // --- SEARCH STATE ---
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- FORM STATE (Removed all job fields) ---
+  // --- FORM STATE ---
   const [formData, setFormData] = useState({
     formTitle: "", 
     description: "", 
@@ -70,7 +83,6 @@ function Placement() {
         method = 'PUT';
       }
 
-      // We only send what the user filled out
       const res = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -174,6 +186,57 @@ function Placement() {
     }
   };
 
+  // --- OPEN COUNSELLOR EDIT MODAL ---
+  const openCounsellorEdit = (student) => {
+    setEditingCounsellorStudent(student);
+    setCounsellorEditForm({
+      batchName: student.batchName || '',
+      courseType: student.courseType || 'Silver',
+      totalFees: student.totalFees || 0,
+      feesPaid: student.feesPaid || 0,
+      joinedDate: student.joinedDate ? new Date(student.joinedDate).toISOString().split('T')[0] : '',
+      endedDate: student.endedDate ? new Date(student.endedDate).toISOString().split('T')[0] : '',
+      totalInterviewsGiven: student.totalInterviewsGiven || 0,
+      totalInterviewsRejected: student.totalInterviewsRejected || 0
+    });
+    setShowCounsellorEditModal(true);
+  };
+
+  // --- HANDLE COUNSELLOR EDIT CHANGES ---
+  const handleCounsellorEditChange = (e) => {
+    const { name, value } = e.target;
+    setCounsellorEditForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  // --- SAVE COUNSELLOR UPDATES INSTANTLY ---
+  const saveCounsellorUpdate = async () => {
+    try {
+      await fetch(`${API_BASE}/placement/applications/${editingCounsellorStudent._id}/counsellor-update`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          batchName: counsellorEditForm.batchName,
+          courseType: counsellorEditForm.courseType,
+          totalFees: counsellorEditForm.totalFees,
+          feesPaid: counsellorEditForm.feesPaid,
+          joinedDate: counsellorEditForm.joinedDate,
+          endedDate: counsellorEditForm.endedDate,
+          totalInterviewsGiven: Number(counsellorEditForm.totalInterviewsGiven),
+          totalInterviewsRejected: Number(counsellorEditForm.totalInterviewsRejected)
+        })
+      });
+
+      // ✅ Refresh both the table and the parent placement list immediately
+      viewApplicants({ _id: selectedApplicants[0]?.placementForm, formTitle: selectedPlacementTitle });
+      loadPlacements();
+      setShowCounsellorEditModal(false);
+      alert('✅ Student updated successfully!');
+    } catch (error) {
+      console.error('Error updating student:', error);
+      alert('Error updating student. Please try again.');
+    }
+  };
+
   // --- HANDLE STATUS UPDATE ---
   const handleStatusUpdate = async (applicationId, newStatus) => {
     try {
@@ -212,7 +275,6 @@ function Placement() {
           <h1 className="placement-title">📋 Form Management</h1>
           <p className="placement-subtitle">Create and manage student training forms</p>
         </div>
-        {/* ✅ Only show button if user is ADMIN */}
         {user?.role === 'admin' && (
           <button onClick={() => { setIsEditing(false); setEditingId(null); setFormData({ formTitle: "", description: "", expiryDate: "" }); setShowModal(true); }} className="create-btn">+ Create New Form</button>
         )}
@@ -272,49 +334,24 @@ function Placement() {
         </table>
       </div>
 
-      {/* --- CREATE/EDIT MODAL (CLEAN VERSION) --- */}
+      {/* --- CREATE/EDIT MODAL --- */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: '600px' }}>
             <h2 className="modal-title">{isEditing ? '✏️ Edit Form' : '📝 Create New Form'}</h2>
             <form onSubmit={handleSubmit}>
-              
-              {/* We removed all the job fields. Only Form Title remains! */}
               <div className="form-group">
                 <label>Form Title *</label>
-                <input 
-                  name="formTitle" 
-                  placeholder="e.g. Batch 2026 Training Form" 
-                  value={formData.formTitle} 
-                  onChange={handleChange} 
-                  required 
-                  className="form-control"
-                />
+                <input name="formTitle" placeholder="e.g. Batch 2026 Training Form" value={formData.formTitle} onChange={handleChange} required className="form-control" />
               </div>
-
               <div className="form-group" style={{ marginTop: '15px' }}>
                 <label>Description (Optional)</label>
-                <textarea 
-                  rows="3" 
-                  name="description" 
-                  placeholder="Enter details about this training batch..." 
-                  value={formData.description} 
-                  onChange={handleChange} 
-                  className="form-control"
-                />
+                <textarea rows="3" name="description" placeholder="Enter details about this training batch..." value={formData.description} onChange={handleChange} className="form-control" />
               </div>
-
               <div className="form-group" style={{ marginTop: '15px' }}>
                 <label>Expiry Date (Optional)</label>
-                <input 
-                  type="date" 
-                  name="expiryDate" 
-                  value={formData.expiryDate} 
-                  onChange={handleChange} 
-                  className="form-control"
-                />
+                <input type="date" name="expiryDate" value={formData.expiryDate} onChange={handleChange} className="form-control" />
               </div>
-              
               <div className="modal-actions" style={{ marginTop: '25px' }}>
                 <button type="button" onClick={() => setShowModal(false)} className="cancel-btn">Cancel</button>
                 <button type="submit" className="save-btn" disabled={loading}>
@@ -322,7 +359,6 @@ function Placement() {
                 </button>
               </div>
             </form>
-
             {createdLink && !isEditing && (
               <div className="share-box" style={{ marginTop: '20px', padding: '15px', background: '#f0fff4', border: '1px solid #48bb78', borderRadius: '8px' }}>
                 <h4 style={{ margin: '0 0 5px 0', color: '#22543d' }}>✅ Form Created!</h4>
@@ -337,58 +373,20 @@ function Placement() {
         </div>
       )}
 
-      {/* --- VIEW APPLICANTS MODAL (UPDATED WITH INTERVIEW TRACKING & CSV) --- */}
+      {/* --- VIEW APPLICANTS MODAL (CLEANED VERSION) --- */}
       {showApplicantsModal && (
         <div className="modal-applicants-overlay" onClick={() => setShowApplicantsModal(false)}>
           <div className="modal-applicants-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '1400px' }}>
             <div className="modal-applicants-header">
               <h3>📋 Students Applied to <span>{selectedPlacementTitle}</span></h3>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                {/* 🆕 CSV DOWNLOAD BUTTON */}
-                <button 
-                  onClick={() => {
-                    if (selectedApplicants.length === 0) return alert('No data to export');
-                    
-                    const headers = ['Name','Email','Phone','ID','Branch','CGPA','Batch','Course','Total Fees','Paid','Pending','Due','Joined','Ended','Total Interviews','Shortlisted','Selected','Rejected','Status'];
-                    
-                    const rows = selectedApplicants.map(app => [
-                      `"${app.studentName}"`, `"${app.studentEmail}"`, `"${app.studentPhone || ''}"`,
-                      `"${app.studentId || ''}"`, `"${app.branch}"`, app.cgpa,
-                      `"${app.batchName || ''}"`, `"${app.courseType || 'Silver'}"`,
-                      app.totalFees || 0, app.feesPaid || 0, app.feesPending || 0,
-                      app.dueClear ? 'Clear' : 'Due',
-                      `"${app.joinedDate ? new Date(app.joinedDate).toLocaleDateString() : ''}"`,
-                      `"${app.endedDate ? new Date(app.endedDate).toLocaleDateString() : ''}"`,
-                      app.interviews?.length || 0,
-                      countInterviews(app, 'shortlisted'),
-                      countInterviews(app, 'selected'),
-                      countInterviews(app, 'rejected'),
-                      `"${app.status || 'pending'}"`
-                    ]);
-
-                    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
-                    const blob = new Blob([csvContent], { type: 'text/csv' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${selectedPlacementTitle}_Students.csv`;
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                  }}
-                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
-                >
-                  📥 Download CSV
-                </button>
-
-                <button className="modal-applicants-close" onClick={() => setShowApplicantsModal(false)}>✕</button>
-              </div>
+              <button className="modal-applicants-close" onClick={() => setShowApplicantsModal(false)}>✕</button>
             </div>
             <div className="modal-applicants-body">
               {selectedApplicants.length === 0 ? (
                 <p className="modal-empty-state">No students have submitted this form yet.</p>
               ) : (
                 <table className="modal-applicants-table">
-                                    <thead>
+                  <thead>
                     <tr>
                       <th>#</th>
                       <th>Name</th>
@@ -396,21 +394,17 @@ function Placement() {
                       <th>Phone</th>
                       <th>ID</th>
                       <th>Branch</th>
-                      <th>CGPA</th>
                       <th>Batch</th>
                       <th>Course</th>
                       <th>Total Fees</th>
                       <th>Paid</th>
                       <th>Pending</th>
-                      <th>Due Status</th>
                       <th>Joined</th>
                       <th>Ended</th>
                       <th>Interviews</th>
-                      <th>Shortlisted</th>
                       <th>Selected</th>
                       <th>Rejected</th>
-                      <th>Status</th>
-                      <th style={{ textAlign: 'center' }}>Actions</th> {/* 🆕 NEW COLUMN */}
+                      <th style={{ textAlign: 'center' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -422,7 +416,6 @@ function Placement() {
                         <td>{app.studentPhone || '-'}</td>
                         <td>{app.studentId || '-'}</td>
                         <td><span className="branch-pill">{app.branch}</span></td>
-                        <td style={{ fontWeight: '500', textAlign: 'center' }}>{app.cgpa}</td>
                         <td style={{ textAlign: 'center' }}>{app.batchName || '-'}</td>
                         <td style={{ textAlign: 'center' }}>
                           <span className={`course-pill ${(app.courseType || 'silver').toLowerCase()}`}>
@@ -432,70 +425,20 @@ function Placement() {
                         <td style={{ textAlign: 'center' }}>₹{app.totalFees || 0}</td>
                         <td style={{ textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>₹{app.feesPaid || 0}</td>
                         <td style={{ textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>₹{app.feesPending || 0}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <span style={{ 
-                            background: app.dueClear ? '#d1fae5' : '#fee2e2', 
-                            color: app.dueClear ? '#065f46' : '#991b1b', 
-                            padding: '4px 12px', 
-                            borderRadius: '20px', 
-                            fontSize: '12px', 
-                            fontWeight: '600' 
-                          }}>
-                            {app.dueClear ? '✅ Clear' : '⚠️ Due'}
-                          </span>
-                        </td>
                         <td style={{ textAlign: 'center' }}>{app.joinedDate ? new Date(app.joinedDate).toLocaleDateString() : '-'}</td>
                         <td style={{ textAlign: 'center' }}>{app.endedDate ? new Date(app.endedDate).toLocaleDateString() : '-'}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{app.interviews?.length || 0}</td>
-                        <td style={{ textAlign: 'center', color: '#16a34a', fontWeight: 'bold' }}>{countInterviews(app, 'shortlisted')}</td>
-                        <td style={{ textAlign: 'center', color: '#16a34a', fontWeight: 'bold' }}>{countInterviews(app, 'selected')}</td>
-                        <td style={{ textAlign: 'center', color: '#dc2626', fontWeight: 'bold' }}>{countInterviews(app, 'rejected')}</td>
-                        <td>
-                          <select 
-                            value={app.status} 
-                            onChange={(e) => handleStatusUpdate(app._id, e.target.value)} 
-                            className="status-select"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="shortlisted">Shortlisted</option>
-                            <option value="interview_scheduled">Interview</option>
-                            <option value="selected">Selected</option>
-                            <option value="rejected">Rejected</option>
-                          </select>
+                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{app.totalInterviewsGiven || 0}</td>
+                        <td style={{ textAlign: 'center', color: '#16a34a', fontWeight: 'bold' }}>
+                          {app.totalInterviewsSelected !== undefined ? app.totalInterviewsSelected : ((app.totalInterviewsGiven || 0) - (app.totalInterviewsRejected || 0))}
                         </td>
-                        
-                        {/* 🆕 SINGLE STUDENT CSV DOWNLOAD BUTTON */}
+                        <td style={{ textAlign: 'center', color: '#dc2626', fontWeight: 'bold' }}>{app.totalInterviewsRejected || 0}</td>
+                        {/* 🆕 EDIT BUTTON FOR COUNSELLOR RIGHT INSIDE THE MODAL */}
                         <td style={{ textAlign: 'center' }}>
-                          <button
-                            onClick={() => {
-                              const headers = ['Name','Email','Phone','ID','Branch','CGPA','Batch','Course','Total Fees','Paid','Pending','Due','Joined','Ended','Total Interviews','Shortlisted','Selected','Rejected','Status'];
-                              const row = [
-                                `"${app.studentName}"`, `"${app.studentEmail}"`, `"${app.studentPhone || ''}"`,
-                                `"${app.studentId || ''}"`, `"${app.branch}"`, app.cgpa,
-                                `"${app.batchName || ''}"`, `"${app.courseType || 'Silver'}"`,
-                                app.totalFees || 0, app.feesPaid || 0, app.feesPending || 0,
-                                app.dueClear ? 'Clear' : 'Due',
-                                `"${app.joinedDate ? new Date(app.joinedDate).toLocaleDateString() : ''}"`,
-                                `"${app.endedDate ? new Date(app.endedDate).toLocaleDateString() : ''}"`,
-                                app.interviews?.length || 0,
-                                countInterviews(app, 'shortlisted'),
-                                countInterviews(app, 'selected'),
-                                countInterviews(app, 'rejected'),
-                                `"${app.status || 'pending'}"`
-                              ];
-                              const csvContent = [headers, row].map(row => row.join(',')).join('\n');
-                              const blob = new Blob([csvContent], { type: 'text/csv' });
-                              const url = window.URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `${app.studentName}_Record.csv`;
-                              a.click();
-                              window.URL.revokeObjectURL(url);
-                            }}
-                            style={{ background: '#f3f4f6', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '16px' }}
-                            title="Download this student's record"
+                          <button 
+                            onClick={() => openCounsellorEdit(app)} 
+                            style={{ background: '#e9d8fd', color: '#44337a', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
                           >
-                            📥
+                            ✏️ Update
                           </button>
                         </td>
                       </tr>
@@ -503,6 +446,72 @@ function Placement() {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- COUNSELLOR EDIT MODAL (INSIDE PLACEMENTS PAGE) --- */}
+      {showCounsellorEditModal && editingCounsellorStudent && (
+        <div className="modal-overlay" onClick={() => setShowCounsellorEditModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+            <div className="modal-header">
+              <h3>✏️ Update Student Record</h3>
+              <button className="modal-close" onClick={() => setShowCounsellorEditModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                
+                <div className="form-group">
+                  <label>Batch Name</label>
+                  <input type="text" name="batchName" value={counsellorEditForm.batchName} onChange={handleCounsellorEditChange} />
+                </div>
+
+                <div className="form-group">
+                  <label>Course Type</label>
+                  <select name="courseType" value={counsellorEditForm.courseType} onChange={handleCounsellorEditChange}>
+                    <option value="Silver">Silver</option>
+                    <option value="Platinum">Platinum</option>
+                    <option value="Premium">Premium</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Total Fees (₹)</label>
+                  <input type="number" name="totalFees" value={counsellorEditForm.totalFees} onChange={handleCounsellorEditChange} />
+                </div>
+
+                <div className="form-group">
+                  <label>Fees Paid (₹)</label>
+                  <input type="number" name="feesPaid" value={counsellorEditForm.feesPaid} onChange={handleCounsellorEditChange} />
+                </div>
+
+                <div className="form-group">
+                  <label>Joined Date</label>
+                  <input type="date" name="joinedDate" value={counsellorEditForm.joinedDate} onChange={handleCounsellorEditChange} />
+                </div>
+
+                <div className="form-group">
+                  <label>Ended Date</label>
+                  <input type="date" name="endedDate" value={counsellorEditForm.endedDate} onChange={handleCounsellorEditChange} />
+                </div>
+
+                <div className="form-group">
+                  <label>Total Interviews</label>
+                  <input type="number" name="totalInterviewsGiven" value={counsellorEditForm.totalInterviewsGiven} onChange={handleCounsellorEditChange} />
+                </div>
+
+                <div className="form-group">
+                  <label>Interviews Rejected</label>
+                  <input type="number" name="totalInterviewsRejected" value={counsellorEditForm.totalInterviewsRejected} onChange={handleCounsellorEditChange} />
+                </div>
+
+              </div>
+              <p className="note">* Selected interviews are auto-calculated based on given and rejected counts.</p>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowCounsellorEditModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={saveCounsellorUpdate} className="btn-primary">Save Changes</button>
             </div>
           </div>
         </div>
