@@ -94,6 +94,7 @@ export default function AdminBatches() {
   // Filter students when search changes
   useEffect(() => {
     if (!studentSearch.trim()) {
+      // When no search, show all filtered students (already filtered by teacher subject)
       setFilteredStudents(allStudents);
       return;
     }
@@ -112,24 +113,18 @@ export default function AdminBatches() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log("📡 Fetching data...");
-
       const [batchesRes, studentsRes, teachersRes] = await Promise.all([
         api.get("/batches"),
         api.get("/students"),
         api.get("/admin/teachers"),
       ]);
 
-      console.log("✅ Batches loaded:", batchesRes.data?.length || 0);
-      console.log("✅ Students loaded:", studentsRes.data?.length || 0);
-      console.log("✅ Teachers loaded:", teachersRes.data?.length || 0);
-
       setBatches(batchesRes.data || []);
       setAllStudents(studentsRes.data || []);
       setFilteredStudents(studentsRes.data || []);
       setAllTeachers(teachersRes.data || []);
     } catch (err) {
-      console.error("❌ Error fetching data:", err);
+      console.error("Error fetching data:", err);
       showToast("Error loading data", "error");
     } finally {
       setLoading(false);
@@ -154,12 +149,6 @@ export default function AdminBatches() {
   };
 
   const openEditBatch = (batch) => {
-    console.log("✏️ Editing batch:", batch);
-    console.log(
-      "👨‍🏫 Current teacher ID:",
-      batch.createdBy?._id || batch.createdBy,
-    );
-
     setForm({
       name: batch.name || "",
       category: batch.category || "custom",
@@ -182,11 +171,49 @@ export default function AdminBatches() {
     setShowBatchDetailsModal(true);
   };
 
+  // 🆕 Updated: Open Add Students Modal with filtering by teacher's subjects
   const openAddStudents = (batch) => {
     setSelectedBatch(batch);
     const existingIds = (batch.students || []).map((s) => s._id || s);
     setSelectedStudents(existingIds);
     setStudentSearch("");
+
+    // 🆕 Filter students based on the batch's teacher subjects
+    if (batch.createdBy) {
+      // Get the teacher's subjects
+      const teacherId = batch.createdBy._id || batch.createdBy;
+      const teacher = allTeachers.find((t) => t._id === teacherId);
+
+      if (teacher && teacher.subjects && teacher.subjects.length > 0) {
+        // Filter students who have at least one matching subject with the teacher
+        const teacherSubjects = teacher.subjects.map((s) =>
+          s.toUpperCase().trim(),
+        );
+        const matchingStudents = allStudents.filter((student) => {
+          const studentSubjects = (student.subjects || []).map((s) =>
+            s.toUpperCase().trim(),
+          );
+          return studentSubjects.some((sub) => teacherSubjects.includes(sub));
+        });
+        setAllStudents(matchingStudents);
+        setFilteredStudents(matchingStudents);
+      } else {
+        // If teacher has no subjects, show all students (but warn)
+        setAllStudents(allStudents);
+        setFilteredStudents(allStudents);
+        if (teacher) {
+          showToast(
+            "⚠️ This teacher has no subjects assigned. All students are shown.",
+            "warning",
+          );
+        }
+      }
+    } else {
+      // If no teacher assigned, show all students
+      setAllStudents(allStudents);
+      setFilteredStudents(allStudents);
+    }
+
     setShowStudentModal(true);
   };
 
@@ -247,26 +274,18 @@ export default function AdminBatches() {
         status: form.status || "active",
       };
 
-      console.log("📦 Sending payload:", payload);
-
       if (selectedBatch) {
-        const response = await api.put(
-          `/batches/${selectedBatch._id}`,
-          payload,
-        );
-        console.log("✅ Update response:", response.data);
+        await api.put(`/batches/${selectedBatch._id}`, payload);
         showToast("Batch updated successfully");
       } else {
-        const response = await api.post("/batches", payload);
-        console.log("✅ Create response:", response.data);
+        await api.post("/batches", payload);
         showToast("Batch created successfully");
       }
 
       setShowBatchModal(false);
       await fetchData();
     } catch (err) {
-      console.error("❌ Error saving batch:", err);
-      console.error("❌ Error response:", err.response?.data);
+      console.error("Error saving batch:", err);
       showToast(err.response?.data?.message || "Error saving batch", "error");
     } finally {
       setSaving(false);
@@ -281,7 +300,6 @@ export default function AdminBatches() {
 
     try {
       if (editingTopicIndex !== null) {
-        // Update existing topic
         const updatedTopics = [...selectedBatch.topics];
         updatedTopics[editingTopicIndex] = {
           topic: topicForm.topic,
@@ -292,7 +310,6 @@ export default function AdminBatches() {
         });
         showToast("Topic updated successfully");
       } else {
-        // Add new topic
         await api.post(`/batches/${selectedBatch._id}/topics`, topicForm);
         showToast("Topic added successfully");
       }
@@ -618,7 +635,7 @@ export default function AdminBatches() {
                       👨‍🏫 Teacher: {getTeacherName(batch)}
                     </div>
 
-                    {/* Topics Section - Now Editable */}
+                    {/* Topics Section */}
                     <div className="batch-topics" style={{ marginTop: "12px" }}>
                       <div
                         style={{
@@ -746,7 +763,7 @@ export default function AdminBatches() {
         )}
       </div>
 
-      {/* CREATE/EDIT BATCH MODAL */}
+      {/* CREATE/EDIT BATCH MODAL - ADMIN FORM */}
       {showBatchModal && (
         <div className="modal-overlay" onClick={() => setShowBatchModal(false)}>
           <div
@@ -765,6 +782,8 @@ export default function AdminBatches() {
                 ×
               </button>
             </div>
+
+            {/* Category Field */}
             <div className="form-group">
               <label className="form-label">Category *</label>
               <select
@@ -779,6 +798,8 @@ export default function AdminBatches() {
                 ))}
               </select>
             </div>
+
+            {/* Batch Name */}
             <div className="form-group">
               <label className="form-label">Batch Name *</label>
               <input
@@ -788,6 +809,8 @@ export default function AdminBatches() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
+
+            {/* Duration & Duration Type */}
             <div
               className="form-row"
               style={{
@@ -823,6 +846,8 @@ export default function AdminBatches() {
                 </select>
               </div>
             </div>
+
+            {/* Description */}
             <div className="form-group">
               <label className="form-label">Description</label>
               <textarea
@@ -835,6 +860,8 @@ export default function AdminBatches() {
                 }
               />
             </div>
+
+            {/* Start & End Date */}
             <div
               className="form-row"
               style={{
@@ -866,6 +893,8 @@ export default function AdminBatches() {
                 />
               </div>
             </div>
+
+            {/* Max Students */}
             <div className="form-group">
               <label className="form-label">Max Students</label>
               <input
@@ -881,23 +910,34 @@ export default function AdminBatches() {
                 }
               />
             </div>
+
+            {/* Assign Teacher - ADMIN ONLY */}
             <div className="form-group">
               <label className="form-label">Assign Teacher</label>
               <select
                 className="form-control"
                 value={form.createdBy}
-                onChange={(e) =>
-                  setForm({ ...form, createdBy: e.target.value })
-                }
+                onChange={(e) => {
+                  const teacherId = e.target.value;
+                  setForm({ ...form, createdBy: teacherId });
+
+                  // 🆕 When teacher changes, update the student filter
+                  if (teacherId && selectedBatch) {
+                    // We'll filter students when opening the add students modal
+                  }
+                }}
               >
                 <option value="">None</option>
                 {allTeachers.map((teacher) => (
                   <option key={teacher._id} value={teacher._id}>
-                    {teacher.name} ({teacher.email})
+                    {teacher.name} (
+                    {teacher.subjects?.join(", ") || "No subjects"})
                   </option>
                 ))}
               </select>
             </div>
+
+            {/* Status - ADMIN ONLY */}
             <div className="form-group">
               <label className="form-label">Status</label>
               <select
@@ -910,6 +950,7 @@ export default function AdminBatches() {
                 <option value="archived">Archived</option>
               </select>
             </div>
+
             <div className="form-actions">
               <button
                 className="btn btn-outline"
@@ -933,7 +974,7 @@ export default function AdminBatches() {
         </div>
       )}
 
-      {/* ADD STUDENTS MODAL WITH SEARCH */}
+      {/* ADD STUDENTS MODAL - Filtered by Teacher's Subjects */}
       {showStudentModal && selectedBatch && (
         <div
           className="modal-overlay"
@@ -961,7 +1002,43 @@ export default function AdminBatches() {
                   Select students to add to this batch.
                 </p>
 
-                {/* Search Bar */}
+                {/* 🆕 Show teacher subject info */}
+                {selectedBatch.createdBy && (
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      background: "#f0fdf4",
+                      borderRadius: "6px",
+                      border: "1px solid #bbf7d0",
+                      marginBottom: "10px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    👨‍🏫 <strong>Teacher:</strong> {getTeacherName(selectedBatch)}
+                    <span
+                      style={{ marginLeft: "8px", color: "var(--gray-500)" }}
+                    >
+                      (Subjects:{" "}
+                      {(() => {
+                        const teacherId =
+                          selectedBatch.createdBy._id ||
+                          selectedBatch.createdBy;
+                        const teacher = allTeachers.find(
+                          (t) => t._id === teacherId,
+                        );
+                        return teacher?.subjects?.join(", ") || "None";
+                      })()}
+                      )
+                    </span>
+                    <br />
+                    <span
+                      style={{ fontSize: "12px", color: "var(--gray-500)" }}
+                    >
+                      ℹ️ Only students with matching subjects are shown below.
+                    </span>
+                  </div>
+                )}
+
                 <div
                   style={{
                     display: "flex",
@@ -1036,7 +1113,9 @@ export default function AdminBatches() {
 
               {allStudents.length === 0 ? (
                 <p style={{ textAlign: "center", color: "var(--text-muted)" }}>
-                  No students found in the system.
+                  {selectedBatch.createdBy
+                    ? "No students match this teacher's subjects."
+                    : "No students found in the system."}
                 </p>
               ) : filteredStudents.length === 0 ? (
                 <div
@@ -1076,6 +1155,22 @@ export default function AdminBatches() {
                       (s) => s._id === student._id,
                     );
                     const isSelected = selectedStudents.includes(student._id);
+
+                    // Show which subjects match the teacher
+                    const teacherId =
+                      selectedBatch.createdBy?._id || selectedBatch.createdBy;
+                    const teacher = allTeachers.find(
+                      (t) => t._id === teacherId,
+                    );
+                    const teacherSubjects = (teacher?.subjects || []).map((s) =>
+                      s.toUpperCase().trim(),
+                    );
+                    const studentSubjects = (student.subjects || []).map((s) =>
+                      s.toUpperCase().trim(),
+                    );
+                    const matchingSubjects = studentSubjects.filter((sub) =>
+                      teacherSubjects.includes(sub),
+                    );
 
                     return (
                       <label
@@ -1125,7 +1220,19 @@ export default function AdminBatches() {
                             {student.email} • {student.phone}
                             {student.subjects &&
                               student.subjects.length > 0 &&
-                              ` • ${student.subjects.join(", ")}`}
+                              ` • Subjects: ${student.subjects.join(", ")}`}
+                            {matchingSubjects.length > 0 &&
+                              !isAlreadyInBatch && (
+                                <span
+                                  style={{
+                                    color: "#16a34a",
+                                    marginLeft: "6px",
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  ✅ Matches: {matchingSubjects.join(", ")}
+                                </span>
+                              )}
                           </div>
                         </div>
                         {isAlreadyInBatch && (

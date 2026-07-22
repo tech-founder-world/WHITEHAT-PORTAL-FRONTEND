@@ -180,7 +180,6 @@ export default function TeacherBatches() {
 
     try {
       if (editingTopicIndex !== null) {
-        // Update existing topic
         const updatedTopics = [...selectedBatch.topics];
         updatedTopics[editingTopicIndex] = {
           topic: topicForm.topic,
@@ -191,7 +190,6 @@ export default function TeacherBatches() {
         });
         showToast("Topic updated successfully");
       } else {
-        // Add new topic
         await api.post(`/batches/${selectedBatch._id}/topics`, topicForm);
         showToast("Topic added successfully");
       }
@@ -278,6 +276,21 @@ export default function TeacherBatches() {
     }
   };
 
+  // Helper: Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not set";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
@@ -343,14 +356,12 @@ export default function TeacherBatches() {
                   )}
                   {batch.startDate && (
                     <div className="batch-dates">
-                      📅 {new Date(batch.startDate).toLocaleDateString()} →{" "}
-                      {batch.endDate
-                        ? new Date(batch.endDate).toLocaleDateString()
-                        : "Ongoing"}
+                      📅 {formatDate(batch.startDate)} →{" "}
+                      {batch.endDate ? formatDate(batch.endDate) : "Ongoing"}
                     </div>
                   )}
 
-                  {/* Topics Section - Now Editable */}
+                  {/* Topics Section */}
                   <div className="batch-topics" style={{ marginTop: "12px" }}>
                     <div
                       style={{
@@ -512,7 +523,7 @@ export default function TeacherBatches() {
         )}
       </div>
 
-      {/* Create/Edit Batch Modal - Removed Fee */}
+      {/* CREATE/EDIT BATCH MODAL - TEACHER FORM (Simplified) */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -532,6 +543,7 @@ export default function TeacherBatches() {
               </button>
             </div>
 
+            {/* Batch Name */}
             <div className="form-group">
               <label className="form-label">Batch Name *</label>
               <input
@@ -542,6 +554,7 @@ export default function TeacherBatches() {
               />
             </div>
 
+            {/* Timing */}
             <div className="form-group">
               <label className="form-label">Timing</label>
               <input
@@ -552,6 +565,7 @@ export default function TeacherBatches() {
               />
             </div>
 
+            {/* Description */}
             <div className="form-group">
               <label className="form-label">Description</label>
               <textarea
@@ -565,6 +579,7 @@ export default function TeacherBatches() {
               />
             </div>
 
+            {/* Start & End Date */}
             <div
               className="form-row"
               style={{
@@ -597,6 +612,7 @@ export default function TeacherBatches() {
               </div>
             </div>
 
+            {/* Max Students */}
             <div className="form-group">
               <label className="form-label">Max Students</label>
               <input
@@ -608,6 +624,26 @@ export default function TeacherBatches() {
                   setForm({ ...form, maxStudents: Number(e.target.value) })
                 }
               />
+            </div>
+
+            {/* Note: Teacher is auto-assigned, no status field */}
+            <div
+              style={{
+                padding: "10px 14px",
+                background: "#f0fdf4",
+                borderRadius: "8px",
+                border: "1px solid #bbf7d0",
+                fontSize: "13px",
+                color: "var(--text-muted)",
+                marginBottom: "12px",
+              }}
+            >
+              ℹ️ You are creating this batch as: <strong>{user?.name}</strong>
+              <br />
+              <span style={{ fontSize: "12px" }}>
+                Teacher will be auto-assigned and batch will be active by
+                default.
+              </span>
             </div>
 
             <div className="form-actions">
@@ -633,7 +669,7 @@ export default function TeacherBatches() {
         </div>
       )}
 
-      {/* Add/Edit Topic Modal */}
+      {/* Add Topic Modal */}
       {showTopicModal && selectedBatch && (
         <div className="modal-overlay" onClick={() => setShowTopicModal(false)}>
           <div

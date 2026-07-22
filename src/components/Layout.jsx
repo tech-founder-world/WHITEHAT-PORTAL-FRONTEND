@@ -229,7 +229,7 @@ export default function Layout() {
               <span className="logo-icon">🏫</span>
             </div>
             <div className="logo-text">
-              <span className="logo-main">WhiteHead</span>
+              <span className="logo-main">WhiteHat</span>
               <span className="logo-sub">Coders</span>
             </div>
           </div>
