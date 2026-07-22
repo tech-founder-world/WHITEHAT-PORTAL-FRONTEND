@@ -68,14 +68,12 @@ export default function ManageStudents() {
         );
         setAllSubjects([...subjectSet].sort());
       } else {
-        // Teacher - Only show students with matching subjects
         const teacherSubjects = user?.subjects || [];
         setAllSubjects(teacherSubjects);
 
         if (teacherSubjects.length === 0) {
           setStudents([]);
         } else {
-          // Fetch students that have at least one matching subject
           const results = await Promise.all(
             teacherSubjects.map((sub) =>
               api.get(`/students?subject=${encodeURIComponent(sub)}`),
@@ -85,11 +83,7 @@ export default function ManageStudents() {
           const combined = [];
           results.forEach((r) => {
             r.data.forEach((s) => {
-              // Also check if student is assigned to this teacher
-              if (
-                !seen.has(s._id) &&
-                (s.teacher?._id === user._id || s.teacher === user._id)
-              ) {
+              if (!seen.has(s._id)) {
                 seen.add(s._id);
                 combined.push(s);
               }
@@ -160,22 +154,50 @@ export default function ManageStudents() {
     setShowAssignModal(true);
   };
 
+  // 🆕 Function to remove teacher from student
+  const handleRemoveTeacher = async (student) => {
+    if (
+      !window.confirm(
+        `Remove teacher "${student.teacher?.name}" from ${student.name}?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.delete(`/admin/students/${student._id}/teacher`);
+      showToast(`✅ Teacher removed from ${student.name} successfully`);
+      fetchAll();
+    } catch (err) {
+      console.error("Error removing teacher:", err);
+      showToast(
+        err.response?.data?.message || "Error removing teacher",
+        "error",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleSubject = (sub) => {
-    // Ensure subject is capitalized for comparison
-    const capitalizedSub = sub.toUpperCase();
     setForm((prev) => ({
       ...prev,
-      subjects: prev.subjects.includes(capitalizedSub)
-        ? prev.subjects.filter((s) => s !== capitalizedSub)
-        : [...prev.subjects, capitalizedSub],
+      subjects: prev.subjects.includes(sub)
+        ? prev.subjects.filter((s) => s !== sub)
+        : [...prev.subjects, sub],
     }));
   };
 
   const addCustomSubject = () => {
     const trimmed = subjectInput.trim();
     if (!trimmed) return;
-    if (!form.subjects.includes(trimmed))
-      setForm((prev) => ({ ...prev, subjects: [...prev.subjects, trimmed] }));
+    const capitalized = trimmed.toUpperCase();
+    if (!form.subjects.includes(capitalized))
+      setForm((prev) => ({
+        ...prev,
+        subjects: [...prev.subjects, capitalized],
+      }));
     setSubjectInput("");
   };
 
@@ -225,7 +247,7 @@ export default function ManageStudents() {
         fatherName: form.fatherName.trim(),
         email: cleanEmail,
         phone: form.phone.trim(),
-        subjects: form.subjects,
+        subjects: form.subjects.map((s) => s.toUpperCase()),
         totalFee: form.totalFee || 0,
         paidAmount: form.paidAmount || 0,
       };
@@ -268,15 +290,16 @@ export default function ManageStudents() {
 
   const handleAssignTeacher = async (teacherId) => {
     try {
-      await api.post("/admin/students/assign-teacher", {
+      const response = await api.post("/admin/students/assign-teacher", {
         studentId: selectedStudent._id,
         teacherId: teacherId,
       });
-      showToast("Teacher assigned successfully");
+      showToast(response.data.message || "Teacher assigned successfully");
       setShowAssignModal(false);
       fetchAll();
     } catch (err) {
-      showToast("Error assigning teacher", "error");
+      const errorMsg = err.response?.data?.message || "Error assigning teacher";
+      showToast(errorMsg, "error");
     }
   };
 
@@ -394,11 +417,10 @@ export default function ManageStudents() {
             {isCounsellor &&
               `${students.length} student${students.length !== 1 ? "s" : ""} registered`}
             {isTeacher &&
-              `You have ${students.length} assigned student${students.length !== 1 ? "s" : ""} (${(user?.subjects || []).join(", ")})`}
+              `Students enrolled in your subject${(user?.subjects || []).length !== 1 ? "s" : ""}: ${(user?.subjects || []).join(", ")}`}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {/* 🆕 Export All Buttons */}
           {(isAdmin || isTeacher || isCounsellor) && students.length > 0 && (
             <>
               <button
@@ -616,17 +638,45 @@ export default function ManageStudents() {
                     {isAdmin && (
                       <td>
                         {s.teacher ? (
-                          <span
+                          <div
                             style={{
-                              fontSize: "12px",
-                              color: "var(--success)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              flexWrap: "wrap",
                             }}
                           >
-                            ✓ {s.teacher?.name || "Assigned"}
-                          </span>
+                            <span
+                              style={{
+                                fontSize: "12px",
+                                color: "var(--success)",
+                                background: "#d1fae5",
+                                padding: "2px 10px",
+                                borderRadius: "12px",
+                              }}
+                            >
+                              ✓ {s.teacher?.name || "Assigned"}
+                            </span>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => openAssignTeacher(s)}
+                              style={{ padding: "2px 6px", fontSize: "10px" }}
+                              title="Change Teacher"
+                            >
+                              🔄 Change
+                            </button>
+                            <button
+                              className="btn btn-danger btn-sm"
+                              onClick={() => handleRemoveTeacher(s)}
+                              style={{ padding: "2px 6px", fontSize: "10px" }}
+                              title="Remove Teacher"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         ) : (
                           <button
-                            className="btn btn-outline btn-sm"
+                            className="btn btn-primary btn-sm"
                             onClick={() => openAssignTeacher(s)}
                           >
                             Assign Teacher
@@ -642,7 +692,6 @@ export default function ManageStudents() {
                           flexWrap: "wrap",
                         }}
                       >
-                        {/* 🆕 Export buttons for each student */}
                         <button
                           className="btn btn-success btn-sm"
                           onClick={() => exportSingleCSV(s)}
@@ -699,7 +748,7 @@ export default function ManageStudents() {
         )}
       </div>
 
-      {/* Add/Edit Modal - Keep as is */}
+      {/* Add/Edit Modal */}
       {canAddStudents && showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -839,7 +888,7 @@ export default function ManageStudents() {
                   marginBottom: "8px",
                 }}
               >
-                Click to toggle subjects
+                Click to toggle subjects (auto-capitalized)
               </p>
 
               {allSubjects.length > 0 && (
@@ -884,10 +933,9 @@ export default function ManageStudents() {
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
                   className="form-control"
-                  placeholder="Type a custom subject name..."
+                  placeholder="Type a custom subject name (auto-capitalized)..."
                   value={subjectInput}
                   onChange={(e) => {
-                    // 🆕 Auto capitalize as user types
                     const value = e.target.value.toUpperCase();
                     setSubjectInput(value);
                   }}
@@ -970,8 +1018,7 @@ export default function ManageStudents() {
         </div>
       )}
 
-      {/* Assign Teacher Modal */}
-      {/* Assign Teacher Modal - Updated with Subject Validation */}
+      {/* Assign/Change Teacher Modal with Subject Validation */}
       {isAdmin && showAssignModal && selectedStudent && (
         <div
           className="modal-overlay"
@@ -980,11 +1027,12 @@ export default function ManageStudents() {
           <div
             className="modal"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "600px" }}
+            style={{ maxWidth: "650px" }}
           >
             <div className="modal-header">
               <h3 className="modal-title">
-                Assign Teacher to {selectedStudent.name}
+                {selectedStudent.teacher ? "Change Teacher" : "Assign Teacher"}{" "}
+                for {selectedStudent.name}
               </h3>
               <button
                 className="modal-close"
@@ -994,8 +1042,67 @@ export default function ManageStudents() {
               </button>
             </div>
 
-            {/* 🆕 Student Info and Validation Notice */}
-            <div style={{ marginBottom: "16px" }}>
+            {/* Current Teacher Info */}
+            {selectedStudent.teacher && (
+              <div
+                style={{
+                  padding: "10px 14px",
+                  background: "#f0fdf4",
+                  borderRadius: "8px",
+                  border: "1px solid #bbf7d0",
+                  marginBottom: "12px",
+                }}
+              >
+                <strong>Current Teacher:</strong>
+                <span style={{ marginLeft: "8px", fontWeight: "600" }}>
+                  {selectedStudent.teacher.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--gray-500)",
+                    marginLeft: "8px",
+                  }}
+                >
+                  (
+                  {selectedStudent.teacher.subjects?.join(", ") ||
+                    "No subjects"}
+                  )
+                </span>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={async () => {
+                    if (
+                      window.confirm(
+                        `Remove teacher "${selectedStudent.teacher.name}" from ${selectedStudent.name}?`,
+                      )
+                    ) {
+                      try {
+                        await api.delete(
+                          `/admin/students/${selectedStudent._id}/teacher`,
+                        );
+                        showToast(
+                          `✅ Teacher removed from ${selectedStudent.name}`,
+                        );
+                        setShowAssignModal(false);
+                        fetchAll();
+                      } catch (err) {
+                        showToast("Error removing teacher", "error");
+                      }
+                    }
+                  }}
+                  style={{
+                    marginLeft: "12px",
+                    padding: "2px 10px",
+                    fontSize: "11px",
+                  }}
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            )}
+
+            <div style={{ marginBottom: "12px" }}>
               <div
                 style={{
                   fontSize: "13px",
@@ -1030,22 +1137,6 @@ export default function ManageStudents() {
                   subjects.
                 </span>
               </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  padding: "8px 14px",
-                  marginTop: "8px",
-                  background: "#eff6ff",
-                  borderRadius: "8px",
-                  border: "1px solid #bfdbfe",
-                }}
-              >
-                <strong>💡 Tip:</strong> If no teachers appear, make sure:
-                <br />
-                1. Teachers have subjects assigned in their profile
-                <br />
-                2. Student has at least one matching subject
-              </div>
             </div>
 
             <div className="form-group">
@@ -1066,7 +1157,6 @@ export default function ManageStudents() {
                 style={{ marginBottom: "12px" }}
               />
 
-              {/* 🆕 Show matching count */}
               <div
                 style={{
                   fontSize: "12px",
@@ -1113,7 +1203,6 @@ export default function ManageStudents() {
                   teachers
                     .filter((t) => t._id !== selectedStudent.teacher?._id)
                     .map((teacher) => {
-                      // Check if teacher has matching subject
                       const studentSubjects = (
                         selectedStudent.subjects || []
                       ).map((s) => s.toUpperCase().trim());
@@ -1121,7 +1210,6 @@ export default function ManageStudents() {
                         (s) => s.toUpperCase().trim(),
                       );
 
-                      // Find matching subjects
                       const matchingSubjects = studentSubjects.filter((sub) =>
                         teacherSubjects.includes(sub),
                       );
@@ -1247,7 +1335,7 @@ export default function ManageStudents() {
                             )}
                           </div>
                           <button
-                            className="btn btn-primary btn-sm"
+                            className={`btn ${isCurrentlyAssigned ? "btn-outline" : "btn-primary"} btn-sm`}
                             disabled={
                               !hasMatchingSubject || isCurrentlyAssigned
                             }
@@ -1283,32 +1371,6 @@ export default function ManageStudents() {
               >
                 Cancel
               </button>
-              {selectedStudent.teacher && (
-                <button
-                  className="btn btn-danger"
-                  onClick={async () => {
-                    if (
-                      window.confirm(
-                        `Remove teacher "${selectedStudent.teacher.name}" from ${selectedStudent.name}?`,
-                      )
-                    ) {
-                      try {
-                        // Remove teacher assignment
-                        await api.put(`/students/${selectedStudent._id}`, {
-                          teacher: null,
-                        });
-                        showToast("Teacher unassigned successfully");
-                        setShowAssignModal(false);
-                        fetchAll();
-                      } catch (err) {
-                        showToast("Error unassigning teacher", "error");
-                      }
-                    }
-                  }}
-                >
-                  Unassign Teacher
-                </button>
-              )}
             </div>
           </div>
         </div>

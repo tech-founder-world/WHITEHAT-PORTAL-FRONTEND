@@ -11,6 +11,8 @@ const emptyForm = {
 
 export default function ManageCounsellors() {
   const [counsellors, setCounsellors] = useState([]);
+  const [filteredCounsellors, setFilteredCounsellors] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -29,6 +31,7 @@ export default function ManageCounsellors() {
     try {
       const counsellorsRes = await api.get("/admin/counsellors");
       setCounsellors(counsellorsRes.data);
+      setFilteredCounsellors(counsellorsRes.data);
     } catch (err) {
       console.error(err);
       showToast("Error loading data", "error");
@@ -40,6 +43,26 @@ export default function ManageCounsellors() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Filter counsellors when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredCounsellors(counsellors);
+      return;
+    }
+    const search = searchTerm.toLowerCase().trim();
+    const filtered = counsellors.filter((c) => {
+      return (
+        c.name.toLowerCase().includes(search) ||
+        c.email.toLowerCase().includes(search) ||
+        (c.specialization && c.specialization.toLowerCase().includes(search)) ||
+        (c.students || []).some((student) =>
+          student.name.toLowerCase().includes(search),
+        )
+      );
+    });
+    setFilteredCounsellors(filtered);
+  }, [searchTerm, counsellors]);
 
   const openAdd = () => {
     setForm(emptyForm);
@@ -110,6 +133,10 @@ export default function ManageCounsellors() {
     );
   };
 
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
   return (
     <div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
@@ -120,6 +147,8 @@ export default function ManageCounsellors() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: "10px",
         }}
       >
         <div>
@@ -134,15 +163,95 @@ export default function ManageCounsellors() {
       </div>
 
       <div className="card">
+        {/* Search Bar */}
+        <div style={{ marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
+              <input
+                className="form-control"
+                placeholder="🔍 Search counsellors by name, email, specialization, or student..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ paddingRight: "40px" }}
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  style={{
+                    position: "absolute",
+                    right: "8px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    fontSize: "16px",
+                    cursor: "pointer",
+                    color: "var(--gray-500)",
+                    padding: "4px 8px",
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize: "13px", color: "var(--gray-600)" }}>
+              {searchTerm ? (
+                <span>
+                  Found <strong>{filteredCounsellors.length}</strong> of{" "}
+                  {counsellors.length} counsellors
+                  {filteredCounsellors.length !== counsellors.length && (
+                    <button
+                      onClick={clearSearch}
+                      style={{
+                        marginLeft: "8px",
+                        color: "var(--primary)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </span>
+              ) : (
+                <span>Total: {counsellors.length} counsellors</span>
+              )}
+            </div>
+          </div>
+        </div>
+
         {loading ? (
           <div className="loading-wrapper">
             <div className="spinner" />
             <p>Loading...</p>
           </div>
-        ) : counsellors.length === 0 ? (
+        ) : filteredCounsellors.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🧑‍🏫</div>
-            <p>No counsellors yet. Add your first counsellor to get started.</p>
+            <div className="empty-icon">{searchTerm ? "🔍" : "🧑‍🏫"}</div>
+            <p>
+              {searchTerm
+                ? `No counsellors found matching "${searchTerm}"`
+                : "No counsellors yet. Add your first counsellor to get started."}
+            </p>
+            {searchTerm && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={clearSearch}
+                style={{ marginTop: "8px" }}
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <div className="table-wrapper">
@@ -158,7 +267,7 @@ export default function ManageCounsellors() {
                 </tr>
               </thead>
               <tbody>
-                {counsellors.map((c, i) => (
+                {filteredCounsellors.map((c, i) => (
                   <tr key={c._id}>
                     <td className="text-muted">{i + 1}</td>
                     <td>
@@ -251,7 +360,7 @@ export default function ManageCounsellors() {
                               color: "var(--gray-500)",
                             }}
                           >
-                            {student.rollNumber}
+                            {student.subjects?.join(", ") || "No subjects"}
                           </span>
                         </div>
                       ))}

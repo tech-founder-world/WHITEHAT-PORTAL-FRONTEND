@@ -6,41 +6,12 @@ import "../css/Batches.css";
 export default function CounsellorBatches() {
   const { user } = useAuth();
   const [batches, setBatches] = useState([]);
-  const [allStudents, setAllStudents] = useState([]);
+  const [filteredBatches, setFilteredBatches] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // Modal States
-  const [showBatchModal, setShowBatchModal] = useState(false);
-  const [showStudentModal, setShowStudentModal] = useState(false);
   const [showBatchDetailsModal, setShowBatchDetailsModal] = useState(false);
-
   const [selectedBatch, setSelectedBatch] = useState(null);
-  const [form, setForm] = useState({
-    name: "",
-    category: "custom",
-    duration: "",
-    durationType: "days",
-    description: "",
-    startDate: "",
-    endDate: "",
-    maxStudents: 30,
-    fee: 0,
-  });
-
-  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
-
-  const categoryOptions = [
-    { value: "silver", label: "Silver", duration: 45, durationType: "days" },
-    {
-      value: "platinum",
-      label: "Platinum",
-      duration: 3,
-      durationType: "months",
-    },
-    { value: "premium", label: "Premium", duration: 6, durationType: "months" },
-    { value: "custom", label: "Custom", duration: "", durationType: "days" },
-  ];
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -51,53 +22,42 @@ export default function CounsellorBatches() {
     fetchData();
   }, []);
 
+  // Filter batches when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredBatches(batches);
+      return;
+    }
+    const search = searchTerm.toLowerCase().trim();
+    const filtered = batches.filter((batch) => {
+      return (
+        batch.name.toLowerCase().includes(search) ||
+        (batch.description &&
+          batch.description.toLowerCase().includes(search)) ||
+        (batch.createdBy?.name &&
+          batch.createdBy.name.toLowerCase().includes(search)) ||
+        (batch.students || []).some((student) =>
+          student.name.toLowerCase().includes(search),
+        )
+      );
+    });
+    setFilteredBatches(filtered);
+  }, [searchTerm, batches]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [batchesRes, studentsRes] = await Promise.all([
-        api.get("/batches"),
-        api.get("/students"),
-      ]);
+      console.log("📡 Counsellor fetching batches...");
+      const batchesRes = await api.get("/batches");
+      console.log("✅ Batches loaded:", batchesRes.data?.length || 0);
       setBatches(batchesRes.data || []);
-      setAllStudents(studentsRes.data || []);
+      setFilteredBatches(batchesRes.data || []);
     } catch (err) {
-      console.error("Error fetching data:", err);
-      showToast("Error loading data", "error");
+      console.error("❌ Error fetching batches:", err);
+      showToast("Error loading batches", "error");
     } finally {
       setLoading(false);
     }
-  };
-
-  const openCreateBatch = () => {
-    setForm({
-      name: "",
-      category: "custom",
-      duration: "",
-      durationType: "days",
-      description: "",
-      startDate: "",
-      endDate: "",
-      maxStudents: 30,
-      fee: 0,
-    });
-    setSelectedBatch(null);
-    setShowBatchModal(true);
-  };
-
-  const openEditBatch = (batch) => {
-    setForm({
-      name: batch.name,
-      category: batch.category || "custom",
-      duration: batch.duration || "",
-      durationType: batch.durationType || "days",
-      description: batch.description || "",
-      startDate: batch.startDate || "",
-      endDate: batch.endDate || "",
-      maxStudents: batch.maxStudents || 30,
-      fee: batch.fee || 0,
-    });
-    setSelectedBatch(batch);
-    setShowBatchModal(true);
   };
 
   const openBatchDetails = (batch) => {
@@ -105,107 +65,19 @@ export default function CounsellorBatches() {
     setShowBatchDetailsModal(true);
   };
 
-  const openAddStudents = (batch) => {
-    setSelectedBatch(batch);
-    setShowStudentModal(true);
-  };
-
-  const handleCategoryChange = (category) => {
-    const selected = categoryOptions.find((opt) => opt.value === category);
-    setForm((prev) => ({
-      ...prev,
-      category: category,
-      duration: selected?.duration || "",
-      durationType: selected?.durationType || "days",
-      name: category !== "custom" ? `${selected?.label} Batch` : prev.name,
-    }));
-  };
-
-  const handleSaveBatch = async () => {
-    if (!form.name || !form.duration) {
-      showToast("Batch name and duration required", "error");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const payload = {
-        name: form.name,
-        category: form.category,
-        duration: Number(form.duration),
-        durationType: form.durationType,
-        description: form.description,
-        startDate: form.startDate,
-        endDate: form.endDate,
-        maxStudents: Number(form.maxStudents),
-        fee: Number(form.fee),
-      };
-
-      if (selectedBatch) {
-        await api.put(`/batches/${selectedBatch._id}`, payload);
-        showToast("Batch updated successfully");
-      } else {
-        await api.post("/batches", payload);
-        showToast("Batch created successfully");
-      }
-
-      setShowBatchModal(false);
-      await fetchData();
-    } catch (err) {
-      console.error("Error saving batch:", err);
-      showToast(err.response?.data?.message || "Error saving batch", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAddStudents = async () => {
-    try {
-      const checkboxes = document.querySelectorAll(".student-checkbox:checked");
-      const selectedIds = Array.from(checkboxes).map((cb) => cb.value);
-
-      if (selectedIds.length === 0) {
-        showToast("Please select at least one student", "error");
-        return;
-      }
-
-      await api.put(`/batches/${selectedBatch._id}`, {
-        studentIds: selectedIds,
-      });
-
-      showToast("Students added successfully");
-      setShowStudentModal(false);
-      fetchData();
-    } catch (err) {
-      console.error("Error adding students:", err);
-      showToast(
-        err.response?.data?.message || "Error adding students",
-        "error",
-      );
-    }
-  };
-
-  const handleDeleteBatch = async (id, name) => {
-    if (
-      !window.confirm(
-        `Delete batch "${name}"? This will remove all students from this batch.`,
-      )
-    )
-      return;
-    try {
-      await api.delete(`/batches/${id}`);
-      showToast("Batch deleted");
-      fetchData();
-    } catch (err) {
-      showToast("Error deleting batch", "error");
-    }
-  };
-
   const getDurationDisplay = (batch) => {
-    if (batch.durationType === "months") {
-      return `${batch.duration} month${batch.duration > 1 ? "s" : ""}`;
+    if (!batch) return "Not specified";
+    if (batch.duration === undefined || batch.duration === null) {
+      return "Not specified";
     }
-    return `${batch.duration} day${batch.duration > 1 ? "s" : ""}`;
+    const durationNum = Number(batch.duration);
+    if (isNaN(durationNum) || durationNum === 0) {
+      return "Not specified";
+    }
+    if (batch.durationType === "months") {
+      return `${durationNum} month${durationNum > 1 ? "s" : ""}`;
+    }
+    return `${durationNum} day${durationNum > 1 ? "s" : ""}`;
   };
 
   const getCategoryBadge = (category) => {
@@ -213,6 +85,7 @@ export default function CounsellorBatches() {
       silver: "#C0C0C0",
       platinum: "#E5E4E2",
       premium: "#FFD700",
+      custom: "#666",
     };
     const labels = {
       silver: "🥈 Silver",
@@ -226,25 +99,149 @@ export default function CounsellorBatches() {
     };
   };
 
+  const getTeacherName = (batch) => {
+    if (!batch.createdBy) return "Not assigned";
+    if (typeof batch.createdBy === "object" && batch.createdBy.name) {
+      return batch.createdBy.name;
+    }
+    return "Unknown";
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
+  // Helper: Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not set";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Calculate stats
+  const stats = {
+    total: batches.length,
+    active: batches.filter((b) => b.status === "active").length,
+    completed: batches.filter((b) => b.status === "completed").length,
+    archived: batches.filter((b) => b.status === "archived").length,
+    totalStudents: batches.reduce(
+      (sum, b) => sum + (b.students?.length || 0),
+      0,
+    ),
+  };
+
   return (
     <div>
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
 
-      <div
-        className="page-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
+      <div className="page-header">
         <div>
-          <h1 className="page-title">Batches</h1>
-          <p className="page-subtitle">Create and manage student batches</p>
+          <h1 className="page-title">📚 Batches</h1>
+          <p className="page-subtitle">
+            View all batches and their students (Read-Only)
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateBatch}>
-          + New Batch
-        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="stats-grid" style={{ marginBottom: "24px" }}>
+        <div className="stat-card">
+          <div className="stat-label">Total Batches</div>
+          <div className="stat-value">{stats.total}</div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #4caf50" }}>
+          <div className="stat-label">Active</div>
+          <div className="stat-value" style={{ color: "#4caf50" }}>
+            {stats.active}
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #2196f3" }}>
+          <div className="stat-label">Completed</div>
+          <div className="stat-value" style={{ color: "#2196f3" }}>
+            {stats.completed}
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeft: "4px solid #ff9800" }}>
+          <div className="stat-label">Total Students</div>
+          <div className="stat-value" style={{ color: "#ff9800" }}>
+            {stats.totalStudents}
+          </div>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="card" style={{ marginBottom: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
+            <input
+              className="form-control"
+              placeholder="🔍 Search batches by name, teacher, or student..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ paddingRight: "40px" }}
+            />
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                style={{
+                  position: "absolute",
+                  right: "8px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  color: "var(--gray-500)",
+                  padding: "4px 8px",
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: "13px", color: "var(--gray-600)" }}>
+            {searchTerm ? (
+              <span>
+                Found <strong>{filteredBatches.length}</strong> of{" "}
+                {batches.length} batches
+                {filteredBatches.length !== batches.length && (
+                  <button
+                    onClick={clearSearch}
+                    style={{
+                      marginLeft: "8px",
+                      color: "var(--primary)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Clear filter
+                  </button>
+                )}
+              </span>
+            ) : (
+              <span>Total: {batches.length} batches</span>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="card">
@@ -253,24 +250,27 @@ export default function CounsellorBatches() {
             <div className="spinner" />
             <p>Loading...</p>
           </div>
-        ) : batches.length === 0 ? (
+        ) : filteredBatches.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📚</div>
-            <p>No batches created yet</p>
-            <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-              Create your first batch to start organizing students
+            <div className="empty-icon">{searchTerm ? "🔍" : "📚"}</div>
+            <p>
+              {searchTerm
+                ? `No batches found matching "${searchTerm}"`
+                : "No batches available to view."}
             </p>
-            <button
-              className="btn btn-primary"
-              onClick={openCreateBatch}
-              style={{ marginTop: "12px" }}
-            >
-              Create Batch
-            </button>
+            {searchTerm && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={clearSearch}
+                style={{ marginTop: "8px" }}
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <div className="batches-grid">
-            {batches.map((batch) => {
+            {filteredBatches.map((batch) => {
               const category = getCategoryBadge(batch.category);
               return (
                 <div
@@ -298,10 +298,8 @@ export default function CounsellorBatches() {
                   <div className="batch-details">
                     <div className="batch-info-row">
                       <span>⏱️ {getDurationDisplay(batch)}</span>
-                      <span>
-                        👥 {batch.students?.length || 0}/
-                        {batch.maxStudents || "∞"}
-                      </span>
+                      <span>👥 {batch.students?.length || 0} students</span>
+                      <span>📋 Max: {batch.maxStudents || "∞"}</span>
                     </div>
 
                     {batch.description && (
@@ -309,11 +307,72 @@ export default function CounsellorBatches() {
                     )}
                     {batch.startDate && (
                       <div className="batch-dates">
-                        📅 {batch.startDate} → {batch.endDate || "Ongoing"}
+                        📅 {formatDate(batch.startDate)} →{" "}
+                        {batch.endDate ? formatDate(batch.endDate) : "Ongoing"}
                       </div>
                     )}
-                    {batch.fee > 0 && (
-                      <div className="batch-fee">💰 ₹{batch.fee}</div>
+                    {batch.timing && (
+                      <div
+                        className="batch-timing"
+                        style={{
+                          fontSize: "13px",
+                          color: "var(--text-muted)",
+                          marginTop: "4px",
+                        }}
+                      >
+                        🕐 {batch.timing}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--text-muted)",
+                        marginTop: "4px",
+                      }}
+                    >
+                      👨‍🏫 Teacher: {getTeacherName(batch)}
+                    </div>
+
+                    {/* Topics Section - Read Only */}
+                    {batch.topics && batch.topics.length > 0 && (
+                      <div
+                        className="batch-topics"
+                        style={{ marginTop: "12px" }}
+                      >
+                        <strong style={{ fontSize: "13px" }}>
+                          📝 Topics Covered ({batch.topics.length})
+                        </strong>
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            maxHeight: "100px",
+                            overflowY: "auto",
+                          }}
+                        >
+                          {batch.topics.map((t, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                fontSize: "12px",
+                                padding: "4px 0",
+                                borderBottom: "1px solid var(--gray-100)",
+                              }}
+                            >
+                              <span style={{ fontWeight: 600 }}>{t.topic}</span>
+                              <span
+                                style={{
+                                  color: "var(--gray-500)",
+                                  marginLeft: "8px",
+                                }}
+                              >
+                                {t.date
+                                  ? new Date(t.date).toLocaleDateString()
+                                  : ""}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -321,27 +380,25 @@ export default function CounsellorBatches() {
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => openBatchDetails(batch)}
+                      style={{ flex: 1 }}
                     >
                       👁️ View Students
                     </button>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => openAddStudents(batch)}
+                    {/* Read-only indicator */}
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--gray-400)",
+                        padding: "4px 8px",
+                        background: "var(--gray-50)",
+                        borderRadius: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
                     >
-                      ➕ Add Students
-                    </button>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => openEditBatch(batch)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDeleteBatch(batch._id, batch.name)}
-                    >
-                      Delete
-                    </button>
+                      🔒 Read Only
+                    </span>
                   </div>
                 </div>
               );
@@ -350,285 +407,7 @@ export default function CounsellorBatches() {
         )}
       </div>
 
-      {/* CREATE/EDIT BATCH MODAL */}
-      {showBatchModal && (
-        <div className="modal-overlay" onClick={() => setShowBatchModal(false)}>
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "600px" }}
-          >
-            <div className="modal-header">
-              <h3 className="modal-title">
-                {selectedBatch ? "Edit Batch" : "Create New Batch"}
-              </h3>
-              <button
-                className="modal-close"
-                onClick={() => setShowBatchModal(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Category *</label>
-              <select
-                className="form-control"
-                value={form.category}
-                onChange={(e) => handleCategoryChange(e.target.value)}
-              >
-                {categoryOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Batch Name *</label>
-              <input
-                className="form-control"
-                placeholder="e.g. MERN Stack Batch"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-            <div
-              className="form-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
-              <div className="form-group">
-                <label className="form-label">Duration *</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  placeholder="e.g. 45"
-                  value={form.duration}
-                  min={1}
-                  onChange={(e) =>
-                    setForm({ ...form, duration: e.target.value })
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Duration Type</label>
-                <select
-                  className="form-control"
-                  value={form.durationType}
-                  onChange={(e) =>
-                    setForm({ ...form, durationType: e.target.value })
-                  }
-                >
-                  <option value="days">Days</option>
-                  <option value="months">Months</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea
-                className="form-control"
-                placeholder="Batch description..."
-                rows="2"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-              />
-            </div>
-            <div
-              className="form-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
-              <div className="form-group">
-                <label className="form-label">Start Date</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={form.startDate}
-                  onChange={(e) =>
-                    setForm({ ...form, startDate: e.target.value })
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">End Date</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={form.endDate}
-                  onChange={(e) =>
-                    setForm({ ...form, endDate: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <div
-              className="form-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
-              <div className="form-group">
-                <label className="form-label">Max Students</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={form.maxStudents}
-                  min={1}
-                  onChange={(e) =>
-                    setForm({ ...form, maxStudents: parseInt(e.target.value) })
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Fee (₹)</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={form.fee}
-                  min={0}
-                  onChange={(e) =>
-                    setForm({ ...form, fee: parseInt(e.target.value) })
-                  }
-                />
-              </div>
-            </div>
-            <div className="form-actions">
-              <button
-                className="btn btn-outline"
-                onClick={() => setShowBatchModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveBatch}
-                disabled={saving}
-              >
-                {saving
-                  ? "Saving..."
-                  : selectedBatch
-                    ? "Update Batch"
-                    : "Create Batch"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ADD STUDENTS TO BATCH MODAL */}
-      {showStudentModal && selectedBatch && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowStudentModal(false)}
-        >
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "600px" }}
-          >
-            <div className="modal-header">
-              <h3 className="modal-title">
-                Add Students to "{selectedBatch.name}"
-              </h3>
-              <button
-                className="modal-close"
-                onClick={() => setShowStudentModal(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div
-              className="modal-body"
-              style={{ maxHeight: "400px", overflowY: "auto" }}
-            >
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "var(--text-muted)",
-                  marginBottom: "12px",
-                }}
-              >
-                Select students to add to this batch.
-              </p>
-              {allStudents.length === 0 ? (
-                <p style={{ textAlign: "center", color: "var(--text-muted)" }}>
-                  No students found in the system.
-                </p>
-              ) : (
-                allStudents.map((student) => {
-                  const isAlreadyInBatch = selectedBatch.students?.some(
-                    (s) => s._id === student._id,
-                  );
-                  return (
-                    <label
-                      key={student._id}
-                      data-student-id={student._id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "8px",
-                        borderBottom: "1px solid #eee",
-                        cursor: isAlreadyInBatch ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        className="student-checkbox"
-                        value={student._id}
-                        disabled={isAlreadyInBatch}
-                        defaultChecked={isAlreadyInBatch}
-                      />
-                      <span
-                        style={{
-                          marginLeft: "10px",
-                          fontWeight: isAlreadyInBatch ? "bold" : "normal",
-                        }}
-                      >
-                        {student.name} ({student.email})
-                      </span>
-                      {isAlreadyInBatch && (
-                        <span
-                          style={{
-                            marginLeft: "10px",
-                            fontSize: "12px",
-                            color: "green",
-                          }}
-                        >
-                          ✅ Already in batch
-                        </span>
-                      )}
-                    </label>
-                  );
-                })
-              )}
-            </div>
-            <div className="form-actions">
-              <button
-                className="btn btn-outline"
-                onClick={() => setShowStudentModal(false)}
-              >
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleAddStudents}>
-                Add Students
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* VIEW BATCH DETAILS MODAL */}
+      {/* VIEW BATCH DETAILS MODAL - Read Only */}
       {showBatchDetailsModal && selectedBatch && (
         <div
           className="modal-overlay"
@@ -642,6 +421,16 @@ export default function CounsellorBatches() {
             <div className="modal-header">
               <h3 className="modal-title">
                 📋 Students in "{selectedBatch.name}"
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--gray-400)",
+                    marginLeft: "12px",
+                    fontWeight: "normal",
+                  }}
+                >
+                  (Read-Only)
+                </span>
               </h3>
               <button
                 className="modal-close"
@@ -776,18 +565,20 @@ export default function CounsellorBatches() {
                     "Due Amount",
                     "Status",
                   ];
-                  const rows = selectedBatch.students.map((s, i) => [
-                    i + 1,
-                    `"${s.name}"`,
-                    `"${s.fatherName || ""}"`,
-                    `"${s.email || ""}"`,
-                    `"${s.phone || ""}"`,
-                    `"${s.courseType || "Silver"}"`,
-                    s.totalFee || 0,
-                    s.paidAmount || 0,
-                    s.dueAmount || 0,
-                    `"${s.status || "active"}"`,
-                  ]);
+                  const rows =
+                    selectedBatch.students?.map((s, i) => [
+                      i + 1,
+                      `"${s.name}"`,
+                      `"${s.fatherName || ""}"`,
+                      `"${s.email || ""}"`,
+                      `"${s.phone || ""}"`,
+                      `"${s.courseType || "Silver"}"`,
+                      s.totalFee || 0,
+                      s.paidAmount || 0,
+                      s.dueAmount || 0,
+                      `"${s.status || "active"}"`,
+                    ]) || [];
+
                   const csvContent = [headers, ...rows]
                     .map((row) => row.join(","))
                     .join("\n");

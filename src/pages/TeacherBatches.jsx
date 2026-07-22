@@ -7,6 +7,8 @@ export default function TeacherBatches() {
   const { user } = useAuth();
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [studentSearch, setStudentSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showTopicModal, setShowTopicModal] = useState(false);
@@ -20,12 +22,12 @@ export default function TeacherBatches() {
     startDate: "",
     endDate: "",
     maxStudents: 30,
-    fee: 0,
   });
   const [topicForm, setTopicForm] = useState({
     topic: "",
     date: new Date().toISOString().split("T")[0],
   });
+  const [editingTopicIndex, setEditingTopicIndex] = useState(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -38,6 +40,24 @@ export default function TeacherBatches() {
     fetchData();
   }, []);
 
+  // Filter students when search changes
+  useEffect(() => {
+    if (!studentSearch.trim()) {
+      setFilteredStudents(students);
+      return;
+    }
+    const search = studentSearch.toLowerCase().trim();
+    const filtered = students.filter((s) => {
+      return (
+        s.name.toLowerCase().includes(search) ||
+        s.email?.toLowerCase().includes(search) ||
+        s.fatherName?.toLowerCase().includes(search) ||
+        s.phone?.includes(search)
+      );
+    });
+    setFilteredStudents(filtered);
+  }, [studentSearch, students]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -47,11 +67,11 @@ export default function TeacherBatches() {
       ]);
       setBatches(batchesRes.data || []);
 
-      // 🆕 Filter students assigned to this teacher with matching subjects
       const assignedStudents = (studentsRes.data || []).filter(
         (s) => s.teacher?._id === user._id || s.teacher === user._id,
       );
       setStudents(assignedStudents);
+      setFilteredStudents(assignedStudents);
     } catch (err) {
       console.error("Error fetching data:", err);
       showToast("Error loading data", "error");
@@ -68,7 +88,6 @@ export default function TeacherBatches() {
       startDate: "",
       endDate: "",
       maxStudents: 30,
-      fee: 0,
     });
     setSelectedBatch(null);
     setShowModal(true);
@@ -86,26 +105,36 @@ export default function TeacherBatches() {
         ? new Date(batch.endDate).toISOString().split("T")[0]
         : "",
       maxStudents: batch.maxStudents || 30,
-      fee: batch.fee || 0,
     });
     setSelectedBatch(batch);
     setShowModal(true);
   };
 
-  const openTopicModal = (batch) => {
+  const openTopicModal = (batch, topicIndex = null) => {
     setSelectedBatch(batch);
-    setTopicForm({
-      topic: "",
-      date: new Date().toISOString().split("T")[0],
-    });
+    if (topicIndex !== null && batch.topics && batch.topics[topicIndex]) {
+      setEditingTopicIndex(topicIndex);
+      setTopicForm({
+        topic: batch.topics[topicIndex].topic,
+        date:
+          batch.topics[topicIndex].date ||
+          new Date().toISOString().split("T")[0],
+      });
+    } else {
+      setEditingTopicIndex(null);
+      setTopicForm({
+        topic: "",
+        date: new Date().toISOString().split("T")[0],
+      });
+    }
     setShowTopicModal(true);
   };
 
   const openStudentModal = (batch) => {
     setSelectedBatch(batch);
-    // Pre-select students already in the batch
-    const existingStudentIds = batch.students.map((s) => s._id || s);
+    const existingStudentIds = (batch.students || []).map((s) => s._id || s);
     setSelectedStudents(existingStudentIds);
+    setStudentSearch("");
     setShowStudentModal(true);
   };
 
@@ -124,7 +153,6 @@ export default function TeacherBatches() {
         startDate: form.startDate,
         endDate: form.endDate,
         maxStudents: Number(form.maxStudents),
-        fee: Number(form.fee),
       };
 
       if (selectedBatch) {
@@ -151,13 +179,43 @@ export default function TeacherBatches() {
     }
 
     try {
-      await api.post(`/batches/${selectedBatch._id}/topics`, topicForm);
-      showToast("Topic added successfully");
+      if (editingTopicIndex !== null) {
+        // Update existing topic
+        const updatedTopics = [...selectedBatch.topics];
+        updatedTopics[editingTopicIndex] = {
+          topic: topicForm.topic,
+          date: topicForm.date,
+        };
+        await api.put(`/batches/${selectedBatch._id}`, {
+          topics: updatedTopics,
+        });
+        showToast("Topic updated successfully");
+      } else {
+        // Add new topic
+        await api.post(`/batches/${selectedBatch._id}/topics`, topicForm);
+        showToast("Topic added successfully");
+      }
       setShowTopicModal(false);
       fetchData();
     } catch (err) {
-      console.error("Error adding topic:", err);
-      showToast("Error adding topic", "error");
+      console.error("Error saving topic:", err);
+      showToast("Error saving topic", "error");
+    }
+  };
+
+  const handleDeleteTopic = async (batchId, topicIndex) => {
+    if (!window.confirm("Delete this topic?")) return;
+    try {
+      const batch = batches.find((b) => b._id === batchId);
+      if (!batch) return;
+
+      const updatedTopics = batch.topics.filter((_, i) => i !== topicIndex);
+      await api.put(`/batches/${batchId}`, { topics: updatedTopics });
+      showToast("Topic deleted successfully");
+      fetchData();
+    } catch (err) {
+      console.error("Error deleting topic:", err);
+      showToast("Error deleting topic", "error");
     }
   };
 
@@ -277,11 +335,8 @@ export default function TeacherBatches() {
                     </div>
                   )}
                   <div className="batch-info-row">
-                    <span>
-                      👥 {batch.students?.length || 0}/
-                      {batch.maxStudents || "∞"} students
-                    </span>
-                    <span>💰 ₹{batch.fee || 0}</span>
+                    <span>👥 {batch.students?.length || 0} students</span>
+                    <span>📋 Max: {batch.maxStudents || "∞"}</span>
                   </div>
                   {batch.description && (
                     <p className="batch-desc">{batch.description}</p>
@@ -295,7 +350,7 @@ export default function TeacherBatches() {
                     </div>
                   )}
 
-                  {/* Topics Section */}
+                  {/* Topics Section - Now Editable */}
                   <div className="batch-topics" style={{ marginTop: "12px" }}>
                     <div
                       style={{
@@ -305,10 +360,10 @@ export default function TeacherBatches() {
                       }}
                     >
                       <strong style={{ fontSize: "13px" }}>
-                        📝 Topics Covered
+                        📝 Topics Covered ({batch.topics?.length || 0})
                       </strong>
                       <button
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-primary btn-sm"
                         onClick={() => openTopicModal(batch)}
                       >
                         + Add Topic
@@ -318,7 +373,7 @@ export default function TeacherBatches() {
                       <div
                         style={{
                           marginTop: "8px",
-                          maxHeight: "100px",
+                          maxHeight: "150px",
                           overflowY: "auto",
                         }}
                       >
@@ -326,22 +381,43 @@ export default function TeacherBatches() {
                           <div
                             key={i}
                             style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
                               fontSize: "12px",
                               padding: "4px 0",
                               borderBottom: "1px solid var(--gray-100)",
                             }}
                           >
-                            <span style={{ fontWeight: 600 }}>{t.topic}</span>
-                            <span
-                              style={{
-                                color: "var(--gray-500)",
-                                marginLeft: "8px",
-                              }}
-                            >
-                              {t.date
-                                ? new Date(t.date).toLocaleDateString()
-                                : ""}
-                            </span>
+                            <div>
+                              <span style={{ fontWeight: 600 }}>{t.topic}</span>
+                              <span
+                                style={{
+                                  color: "var(--gray-500)",
+                                  marginLeft: "8px",
+                                }}
+                              >
+                                {t.date
+                                  ? new Date(t.date).toLocaleDateString()
+                                  : ""}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => openTopicModal(batch, i)}
+                                style={{ padding: "2px 6px", fontSize: "10px" }}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleDeleteTopic(batch._id, i)}
+                                style={{ padding: "2px 6px", fontSize: "10px" }}
+                              >
+                                ×
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -421,13 +497,13 @@ export default function TeacherBatches() {
                     className="btn btn-outline btn-sm"
                     onClick={() => openEditBatch(batch)}
                   >
-                    Edit
+                    ✏️ Edit
                   </button>
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={() => handleDeleteBatch(batch._id, batch.name)}
                   >
-                    Delete
+                    🗑️ Delete
                   </button>
                 </div>
               </div>
@@ -436,7 +512,7 @@ export default function TeacherBatches() {
         )}
       </div>
 
-      {/* Create/Edit Batch Modal */}
+      {/* Create/Edit Batch Modal - Removed Fee */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -521,38 +597,17 @@ export default function TeacherBatches() {
               </div>
             </div>
 
-            <div
-              className="form-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-              }}
-            >
-              <div className="form-group">
-                <label className="form-label">Max Students</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={form.maxStudents}
-                  min={1}
-                  onChange={(e) =>
-                    setForm({ ...form, maxStudents: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Fee (₹)</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={form.fee}
-                  min={0}
-                  onChange={(e) =>
-                    setForm({ ...form, fee: Number(e.target.value) })
-                  }
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Max Students</label>
+              <input
+                type="number"
+                className="form-control"
+                value={form.maxStudents}
+                min={1}
+                onChange={(e) =>
+                  setForm({ ...form, maxStudents: Number(e.target.value) })
+                }
+              />
             </div>
 
             <div className="form-actions">
@@ -578,7 +633,7 @@ export default function TeacherBatches() {
         </div>
       )}
 
-      {/* Add Topic Modal */}
+      {/* Add/Edit Topic Modal */}
       {showTopicModal && selectedBatch && (
         <div className="modal-overlay" onClick={() => setShowTopicModal(false)}>
           <div
@@ -588,7 +643,8 @@ export default function TeacherBatches() {
           >
             <div className="modal-header">
               <h3 className="modal-title">
-                Add Topic to "{selectedBatch.name}"
+                {editingTopicIndex !== null ? "Edit Topic" : "Add Topic"} to "
+                {selectedBatch.name}"
               </h3>
               <button
                 className="modal-close"
@@ -622,6 +678,21 @@ export default function TeacherBatches() {
               />
             </div>
 
+            {editingTopicIndex !== null && (
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#f59e0b",
+                  padding: "8px",
+                  background: "#fef3c7",
+                  borderRadius: "6px",
+                  marginBottom: "12px",
+                }}
+              >
+                ⚠️ You are editing an existing topic. Changes will be saved.
+              </div>
+            )}
+
             <div className="form-actions">
               <button
                 className="btn btn-outline"
@@ -630,14 +701,14 @@ export default function TeacherBatches() {
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={handleAddTopic}>
-                Add Topic
+                {editingTopicIndex !== null ? "Update Topic" : "Add Topic"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add Students Modal */}
+      {/* Add Students Modal with Search */}
       {showStudentModal && selectedBatch && (
         <div
           className="modal-overlay"
@@ -666,11 +737,57 @@ export default function TeacherBatches() {
                   Select students to add to this batch.
                   <strong> Only students assigned to you are shown.</strong>
                 </p>
+
+                {/* Search Bar */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    alignItems: "center",
+                    marginBottom: "10px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{ flex: 1, minWidth: "200px", position: "relative" }}
+                  >
+                    <input
+                      className="form-control"
+                      placeholder="🔍 Search students by name, email, father name..."
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      style={{ paddingRight: "40px" }}
+                    />
+                    {studentSearch && (
+                      <button
+                        onClick={() => setStudentSearch("")}
+                        style={{
+                          position: "absolute",
+                          right: "8px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "none",
+                          border: "none",
+                          fontSize: "16px",
+                          cursor: "pointer",
+                          color: "var(--gray-500)",
+                          padding: "4px 8px",
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--gray-500)" }}>
+                    {filteredStudents.length} of {students.length} students
+                  </div>
+                </div>
+
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <button
                     className="btn btn-outline btn-sm"
                     onClick={() => {
-                      const allStudentIds = students.map((s) => s._id);
+                      const allStudentIds = filteredStudents.map((s) => s._id);
                       setSelectedStudents(allStudentIds);
                     }}
                   >
@@ -709,6 +826,29 @@ export default function TeacherBatches() {
                     can add them to batches)
                   </span>
                 </p>
+              ) : filteredStudents.length === 0 ? (
+                <div
+                  style={{
+                    padding: "20px",
+                    textAlign: "center",
+                    color: "var(--gray-500)",
+                  }}
+                >
+                  <div style={{ fontSize: "28px", marginBottom: "8px" }}>
+                    🔍
+                  </div>
+                  <p>
+                    No students found matching "<strong>{studentSearch}</strong>
+                    "
+                  </p>
+                  <button
+                    onClick={() => setStudentSearch("")}
+                    className="btn btn-outline btn-sm"
+                    style={{ marginTop: "8px" }}
+                  >
+                    Clear Search
+                  </button>
+                </div>
               ) : (
                 <div
                   style={{
@@ -719,7 +859,7 @@ export default function TeacherBatches() {
                     padding: "8px",
                   }}
                 >
-                  {students.map((student) => {
+                  {filteredStudents.map((student) => {
                     const isInBatch = selectedBatch.students?.some(
                       (s) => s._id === student._id,
                     );
