@@ -97,32 +97,12 @@ export default function Login() {
         <div className="orb orb-2"></div>
         <div className="orb orb-3"></div>
       </div>
-
       {/* ===== PREMIUM INSTITUTE HEADER ===== */}
+
       <header className="institute-header">
         <div className="institute-logo">
-          <div className="logo-icon-wrapper">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-              <rect width="36" height="36" rx="10" fill="#E8470A" />
-              <path
-                d="M18 8L8 14V28H28V14L18 8Z"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M13 22L18 27L23 22"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="logo-text">
-            <span className="logo-main">White Hat</span>
-            <span className="logo-sub">Coders</span>
-          </div>
+          <img src="/logo.jpeg" alt="Logo" className="login-logo-img" />
+          {/* Removed text logo */}
         </div>
         <div className="header-actions">
           <a href="#" className="header-link">
@@ -134,7 +114,6 @@ export default function Login() {
           </a>
         </div>
       </header>
-
       <div className="login-container">
         {/* ===== LEFT PANEL - PREMIUM CAROUSEL ===== */}
         <div className="login-left">

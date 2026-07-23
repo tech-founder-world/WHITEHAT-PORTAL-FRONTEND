@@ -48,7 +48,7 @@ export default function Layout() {
           label: "Dashboard",
           icon: "📊",
           description: "Overview",
-          exact: true, // Add this for dashboard
+          exact: true,
         },
         {
           path: "/admin/teachers",
@@ -200,8 +200,7 @@ export default function Layout() {
           <span className="hamburger"></span>
         </button>
         <div className="mobile-logo">
-          <span className="logo-icon">🏫</span>
-          <span className="logo-text">WhiteHat</span>
+          <img src="/logo.jpeg" alt="Logo" className="mobile-logo-img" />
         </div>
         <div className="mobile-user">
           <div className="mobile-avatar" style={{ background: roleColor }}>
@@ -225,16 +224,10 @@ export default function Layout() {
         {/* Sidebar Header */}
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <div
-              className="logo-icon-wrapper"
-              style={{ background: roleColor }}
-            >
-              <span className="logo-icon">🏫</span>
+            <div className="logo-image-wrapper">
+              <img src="/logo.jpeg" alt="Logo" className="sidebar-logo-img" />
             </div>
-            <div className="logo-text">
-              <span className="logo-main">WhiteHat</span>
-              <span className="logo-sub">Coders</span>
-            </div>
+            {/* Removed text logo - only image */}
           </div>
 
           <button
@@ -272,7 +265,7 @@ export default function Layout() {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.exact || false} // Add end prop for exact matching
+              end={item.exact || false}
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? "active" : ""}`
               }

@@ -369,6 +369,18 @@ html {
   text-transform: uppercase;
 }
 
+.login-logo-img {
+  height: 45px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 992px) {
+  .login-logo-img {
+    height: 35px;
+  }
+}
+
 .header-badge {
   display: flex;
   align-items: center;
@@ -974,6 +986,7 @@ html {
     flex: 1;
     padding: 40px 24px;
     background: white;
+    padding-top: 20px; /* Reduced top padding */
   }
 
   .institute-header {
@@ -987,15 +1000,46 @@ html {
   .header-badge {
     display: none;
   }
+
+  .login-container {
+    padding-top: 60px; /* Reduced from 76px */
+  }
+
+  .login-card-header h2 {
+    font-size: 26px;
+  }
+
+  .login-card {
+    max-width: 380px;
+  }
 }
 
 @media (max-width: 480px) {
   .login-right {
-    padding: 24px 16px;
+    padding: 16px 16px 24px;
+    padding-top: 10px;
+  }
+
+  .login-container {
+    padding-top: 56px; /* Further reduced for mobile */
+  }
+
+  .login-card-header {
+    margin-bottom: 20px;
   }
 
   .login-card-header h2 {
-    font-size: 24px;
+    font-size: 22px;
+  }
+
+  .login-card-header p {
+    font-size: 13px;
+  }
+
+  .greeting-badge {
+    font-size: 11px;
+    padding: 4px 12px;
+    margin-bottom: 8px;
   }
 
   .form-control {
@@ -1018,6 +1062,56 @@ html {
 
   .credential-card {
     flex-wrap: wrap;
+    padding: 8px 12px;
+  }
+
+  .login-footer-links {
+    font-size: 10px;
+    margin-top: 16px;
+    padding-top: 12px;
+  }
+
+  .login-logo-img {
+    height: 30px;
+  }
+
+  .institute-header {
+    padding: 10px 16px;
+  }
+
+  .login-form {
+    gap: 14px;
+  }
+
+  .form-group {
+    gap: 4px;
+  }
+
+  .form-label {
+    font-size: 12px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .login-right {
+    padding: 12px 12px 20px;
+    padding-top: 8px;
+  }
+
+  .login-container {
+    padding-top: 50px;
+  }
+
+  .login-card-header h2 {
+    font-size: 20px;
+  }
+
+  .login-logo-img {
+    height: 26px;
+  }
+
+  .institute-header {
     padding: 8px 12px;
   }
 }
