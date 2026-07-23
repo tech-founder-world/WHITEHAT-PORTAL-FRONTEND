@@ -114,12 +114,12 @@ export default function Layout() {
           icon: "📚",
           description: "Manage batches",
         },
-        {
-          path: "/counsellor/track",
-          label: "Student Tracker",
-          icon: "📊",
-          description: "Track & update students",
-        },
+        // {
+        //   path: "/counsellor/track",
+        //   label: "Student Tracker",
+        //   icon: "📊",
+        //   description: "Track & update students",
+        // },
         {
           path: "/counsellor/students",
           label: "Students",
