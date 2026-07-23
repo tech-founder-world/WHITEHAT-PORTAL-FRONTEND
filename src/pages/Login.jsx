@@ -101,8 +101,8 @@ export default function Login() {
       {/* ===== PREMIUM INSTITUTE HEADER ===== */}
       <header className="institute-header">
         <div className="institute-logo">
-          <div className="logo-icon-wrapper">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <div >
+            {/* <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
               <rect width="36" height="36" rx="10" fill="#E8470A" />
               <path
                 d="M18 8L8 14V28H28V14L18 8Z"
@@ -117,12 +117,13 @@ export default function Login() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-            </svg>
+            </svg> */}
           </div>
-          <div className="logo-text">
+          {/* <div className="logo-text">
             <span className="logo-main">White Hat</span>
             <span className="logo-sub">Coders</span>
-          </div>
+          </div> */}
+          <img src="../logo whc.png" alt="" />
         </div>
         <div className="header-actions">
           <a href="#" className="header-link">

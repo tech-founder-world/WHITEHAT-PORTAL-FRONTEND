@@ -200,8 +200,8 @@ export default function Layout() {
           <span className="hamburger"></span>
         </button>
         <div className="mobile-logo">
-          <span className="logo-icon">🏫</span>
-          <span className="logo-text">WhiteHat</span>
+         
+          <img src="../logo whc.png" alt="" />
         </div>
         <div className="mobile-user">
           <div className="mobile-avatar" style={{ background: roleColor }}>
@@ -226,15 +226,11 @@ export default function Layout() {
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <div
-              className="logo-icon-wrapper"
-              style={{ background: roleColor }}
+              // className="logo-icon-wrapper"
+              // style={{ background: roleColor }}
             >
-              <span className="logo-icon">🏫</span>
-            </div>
-            <div className="logo-text">
-              <span className="logo-main">WhiteHat</span>
-              <span className="logo-sub">Coders</span>
-            </div>
+             <img src="../logo whc.png" alt="" />
+          </div>
           </div>
 
           <button
