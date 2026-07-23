@@ -9,9 +9,27 @@ const emptyForm = {
   email: "",
   phone: "",
   subjects: [],
+  batchType: "Premium",
+  mode: "Online",
   totalFee: 0,
   paidAmount: 0,
 };
+
+// 🆕 Single dropdown with ALL options
+const batchTypeOptions = [
+  { value: "Premium", label: "👑 Premium", color: "#fef3c7", textColor: "#92400e" },
+  { value: "Platinum", label: "💎 Platinum", color: "#e5e7eb", textColor: "#374151" },
+  { value: "Diploma", label: "📜 Diploma", color: "#dbeafe", textColor: "#1e40af" },
+  { value: "45 days", label: "📅 45 Days", color: "#d1fae5", textColor: "#065f46" },
+  { value: "3 months", label: "📅 3 Months", color: "#e0e7ff", textColor: "#4338ca" },
+  { value: "4 months", label: "📅 4 Months", color: "#fce4ec", textColor: "#9a3412" },
+  { value: "6 months", label: "📅 6 Months", color: "#f3e5f5", textColor: "#6b21a8" },
+];
+
+const modeOptions = [
+  { value: "Online", label: "🌐 Online" },
+  { value: "Offline", label: "🏫 Offline" },
+];
 
 export default function ManageStudents() {
   const { user } = useAuth();
@@ -141,6 +159,8 @@ export default function ManageStudents() {
       email: s.email || "",
       phone: s.phone || "",
       subjects: s.subjects || [],
+      batchType: s.batchType || "Premium",
+      mode: s.mode || "Online",
       totalFee: s.totalFee || 0,
       paidAmount: s.paidAmount || 0,
     });
@@ -154,38 +174,13 @@ export default function ManageStudents() {
     setShowAssignModal(true);
   };
 
-  // 🆕 Function to remove teacher from student
-  const handleRemoveTeacher = async (student) => {
-    if (
-      !window.confirm(
-        `Remove teacher "${student.teacher?.name}" from ${student.name}?`,
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await api.delete(`/admin/students/${student._id}/teacher`);
-      showToast(`✅ Teacher removed from ${student.name} successfully`);
-      fetchAll();
-    } catch (err) {
-      console.error("Error removing teacher:", err);
-      showToast(
-        err.response?.data?.message || "Error removing teacher",
-        "error",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const toggleSubject = (sub) => {
+    const capitalizedSub = sub.toUpperCase();
     setForm((prev) => ({
       ...prev,
-      subjects: prev.subjects.includes(sub)
-        ? prev.subjects.filter((s) => s !== sub)
-        : [...prev.subjects, sub],
+      subjects: prev.subjects.includes(capitalizedSub)
+        ? prev.subjects.filter((s) => s !== capitalizedSub)
+        : [...prev.subjects, capitalizedSub],
     }));
   };
 
@@ -194,10 +189,7 @@ export default function ManageStudents() {
     if (!trimmed) return;
     const capitalized = trimmed.toUpperCase();
     if (!form.subjects.includes(capitalized))
-      setForm((prev) => ({
-        ...prev,
-        subjects: [...prev.subjects, capitalized],
-      }));
+      setForm((prev) => ({ ...prev, subjects: [...prev.subjects, capitalized] }));
     setSubjectInput("");
   };
 
@@ -247,7 +239,9 @@ export default function ManageStudents() {
         fatherName: form.fatherName.trim(),
         email: cleanEmail,
         phone: form.phone.trim(),
-        subjects: form.subjects.map((s) => s.toUpperCase()),
+        subjects: form.subjects.map(s => s.toUpperCase()),
+        batchType: form.batchType || "Premium",
+        mode: form.mode || "Online",
         totalFee: form.totalFee || 0,
         paidAmount: form.paidAmount || 0,
       };
@@ -303,7 +297,25 @@ export default function ManageStudents() {
     }
   };
 
-  // 🆕 Export Functions
+  const handleRemoveTeacher = async (student) => {
+    if (!window.confirm(`Remove teacher "${student.teacher?.name}" from ${student.name}?`)) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await api.delete(`/admin/students/${student._id}/teacher`);
+      showToast(`✅ Teacher removed from ${student.name} successfully`);
+      fetchAll();
+    } catch (err) {
+      console.error("Error removing teacher:", err);
+      showToast(err.response?.data?.message || "Error removing teacher", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Export Functions
   const exportSingleCSV = async (student) => {
     try {
       const response = await api.get(`/export/student/${student._id}/csv`, {
@@ -394,6 +406,20 @@ export default function ManageStudents() {
       role: student.addedBy.role,
     };
   });
+
+  // Helper function to get batch type badge
+  const getBatchTypeBadge = (type) => {
+    const colors = {
+      Premium: { bg: "#fef3c7", color: "#92400e", label: "👑 Premium" },
+      Platinum: { bg: "#e5e7eb", color: "#374151", label: "💎 Platinum" },
+      Diploma: { bg: "#dbeafe", color: "#1e40af", label: "📜 Diploma" },
+      "45 days": { bg: "#d1fae5", color: "#065f46", label: "📅 45 Days" },
+      "3 months": { bg: "#e0e7ff", color: "#4338ca", label: "📅 3 Months" },
+      "4 months": { bg: "#fce4ec", color: "#9a3412", label: "📅 4 Months" },
+      "6 months": { bg: "#f3e5f5", color: "#6b21a8", label: "📅 6 Months" },
+    };
+    return colors[type] || colors["Premium"];
+  };
 
   return (
     <div>
@@ -551,6 +577,8 @@ export default function ManageStudents() {
                   <th>Father's Name</th>
                   <th>Email</th>
                   <th>Phone</th>
+                  <th>Batch Type</th>
+                  <th>Mode</th>
                   <th>Enrolled Subjects</th>
                   <th>Fee Details</th>
                   <th>Added By</th>
@@ -560,195 +588,216 @@ export default function ManageStudents() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => (
-                  <tr key={s._id}>
-                    <td>
-                      <strong>{s.name}</strong>
-                    </td>
-                    <td>{s.fatherName || "N/A"}</td>
-                    <td>{s.email}</td>
-                    <td>{s.phone}</td>
-                    <td>
-                      <div className="subject-tags-inline">
-                        {(s.subjects || []).length > 0 ? (
-                          (s.subjects || []).map((sub) => (
-                            <span
-                              key={sub}
-                              className="subject-tag"
-                              style={{
-                                opacity:
-                                  !isTeacher ||
-                                  (user?.subjects || []).includes(sub)
-                                    ? 1
-                                    : 0.45,
-                              }}
-                            >
-                              {sub}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: "13px" }}>
-                        <div>
-                          <span style={{ fontWeight: "600" }}>Total:</span> ₹
-                          {s.totalFee || 0}
-                        </div>
-                        <div>
-                          <span style={{ fontWeight: "600", color: "#16a34a" }}>
-                            Paid:
-                          </span>{" "}
-                          ₹{s.paidAmount || 0}
-                        </div>
-                        <div>
-                          <span
-                            style={{
-                              fontWeight: "600",
-                              color: s.dueAmount > 0 ? "#dc2626" : "#16a34a",
-                            }}
-                          >
-                            Due:
-                          </span>
-                          ₹{s.dueAmount || 0}
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: "13px" }}>
-                        <div>{s.addedBy?.name || "Unknown"}</div>
-                        <div
-                          style={{ fontSize: "11px", color: "var(--gray-500)" }}
-                        >
-                          ({s.addedBy?.role || "N/A"})
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ fontSize: "12px", color: "var(--gray-500)" }}>
-                      {s.createdAt
-                        ? new Date(s.createdAt).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : "—"}
-                    </td>
-                    {isAdmin && (
+                {filtered.map((s) => {
+                  const batchBadge = getBatchTypeBadge(s.batchType);
+                  return (
+                    <tr key={s._id}>
                       <td>
-                        {s.teacher ? (
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              flexWrap: "wrap",
-                            }}
-                          >
+                        <strong>{s.name}</strong>
+                      </td>
+                      <td>{s.fatherName || "N/A"}</td>
+                      <td>{s.email}</td>
+                      <td>{s.phone}</td>
+                      <td>
+                        <span style={{
+                          background: batchBadge.bg,
+                          color: batchBadge.color,
+                          padding: "2px 10px",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          display: "inline-block",
+                        }}>
+                          {batchBadge.label}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{
+                          background: s.mode === "Online" ? "#dbeafe" : "#f3e5f5",
+                          color: s.mode === "Online" ? "#1e40af" : "#6b21a8",
+                          padding: "2px 10px",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}>
+                          {s.mode === "Online" ? "🌐 Online" : "🏫 Offline"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="subject-tags-inline">
+                          {(s.subjects || []).length > 0 ? (
+                            (s.subjects || []).map((sub) => (
+                              <span
+                                key={sub}
+                                className="subject-tag"
+                                style={{
+                                  opacity:
+                                    !isTeacher ||
+                                    (user?.subjects || []).includes(sub)
+                                      ? 1
+                                      : 0.45,
+                                }}
+                              >
+                                {sub}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: "13px" }}>
+                          <div>
+                            <span style={{ fontWeight: "600" }}>Total:</span> ₹
+                            {s.totalFee || 0}
+                          </div>
+                          <div>
+                            <span style={{ fontWeight: "600", color: "#16a34a" }}>
+                              Paid:
+                            </span>{" "}
+                            ₹{s.paidAmount || 0}
+                          </div>
+                          <div>
                             <span
                               style={{
-                                fontSize: "12px",
-                                color: "var(--success)",
-                                background: "#d1fae5",
-                                padding: "2px 10px",
-                                borderRadius: "12px",
+                                fontWeight: "600",
+                                color: s.dueAmount > 0 ? "#dc2626" : "#16a34a",
                               }}
                             >
-                              ✓ {s.teacher?.name || "Assigned"}
+                              Due:
                             </span>
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => openAssignTeacher(s)}
-                              style={{ padding: "2px 6px", fontSize: "10px" }}
-                              title="Change Teacher"
-                            >
-                              🔄 Change
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleRemoveTeacher(s)}
-                              style={{ padding: "2px 6px", fontSize: "10px" }}
-                              title="Remove Teacher"
-                            >
-                              ✕
-                            </button>
+                            ₹{s.dueAmount || 0}
                           </div>
-                        ) : (
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => openAssignTeacher(s)}
-                          >
-                            Assign Teacher
-                          </button>
-                        )}
+                        </div>
                       </td>
-                    )}
-                    <td>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "4px",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <button
-                          className="btn btn-success btn-sm"
-                          onClick={() => exportSingleCSV(s)}
-                          style={{
-                            padding: "2px 8px",
-                            fontSize: "11px",
-                            background: "#059669",
-                            color: "white",
-                          }}
-                          title="Download CSV"
-                        >
-                          📥 CSV
-                        </button>
-                        <button
-                          className="btn btn-success btn-sm"
-                          onClick={() => exportSinglePDF(s)}
-                          style={{
-                            padding: "2px 8px",
-                            fontSize: "11px",
-                            background: "#2563eb",
-                            color: "white",
-                          }}
-                          title="Download PDF"
-                        >
-                          📄 PDF
-                        </button>
-                        {canAddStudents && (
-                          <>
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => openEdit(s)}
-                              style={{ padding: "2px 8px", fontSize: "11px" }}
-                            >
-                              Edit
-                            </button>
-                            {isAdmin && (
+                      <td>
+                        <div style={{ fontSize: "13px" }}>
+                          <div>{s.addedBy?.name || "Unknown"}</div>
+                          <div
+                            style={{ fontSize: "11px", color: "var(--gray-500)" }}
+                          >
+                            ({s.addedBy?.role || "N/A"})
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ fontSize: "12px", color: "var(--gray-500)" }}>
+                        {s.createdAt
+                          ? new Date(s.createdAt).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "—"}
+                      </td>
+                      {isAdmin && (
+                        <td>
+                          {s.teacher ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                              <span
+                                style={{
+                                  fontSize: "12px",
+                                  color: "var(--success)",
+                                  background: "#d1fae5",
+                                  padding: "2px 10px",
+                                  borderRadius: "12px",
+                                }}
+                              >
+                                ✓ {s.teacher?.name || "Assigned"}
+                              </span>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => openAssignTeacher(s)}
+                                style={{ padding: "2px 6px", fontSize: "10px" }}
+                                title="Change Teacher"
+                              >
+                                🔄 Change
+                              </button>
                               <button
                                 className="btn btn-danger btn-sm"
-                                onClick={() => handleDelete(s._id, s.name)}
+                                onClick={() => handleRemoveTeacher(s)}
+                                style={{ padding: "2px 6px", fontSize: "10px" }}
+                                title="Remove Teacher"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => openAssignTeacher(s)}
+                            >
+                              Assign Teacher
+                            </button>
+                          )}
+                        </td>
+                      )}
+                      <td>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "4px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => exportSingleCSV(s)}
+                            style={{
+                              padding: "2px 8px",
+                              fontSize: "11px",
+                              background: "#059669",
+                              color: "white",
+                            }}
+                            title="Download CSV"
+                          >
+                            📥 CSV
+                          </button>
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => exportSinglePDF(s)}
+                            style={{
+                              padding: "2px 8px",
+                              fontSize: "11px",
+                              background: "#2563eb",
+                              color: "white",
+                            }}
+                            title="Download PDF"
+                          >
+                            📄 PDF
+                          </button>
+                          {canAddStudents && (
+                            <>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => openEdit(s)}
                                 style={{ padding: "2px 8px", fontSize: "11px" }}
                               >
-                                Remove
+                                Edit
                               </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                              {isAdmin && (
+                                <button
+                                  className="btn btn-danger btn-sm"
+                                  onClick={() => handleDelete(s._id, s.name)}
+                                  style={{ padding: "2px 8px", fontSize: "11px" }}
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal - with Single Batch Type Dropdown and Mode */}
       {canAddStudents && showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -815,6 +864,38 @@ export default function ManageStudents() {
                 }}
                 maxLength="10"
               />
+            </div>
+
+            {/* 🆕 Single Batch Type Dropdown - ALL options in one */}
+            <div className="form-group">
+              <label className="form-label">Batch Type *</label>
+              <select
+                className="form-control"
+                value={form.batchType}
+                onChange={(e) => setForm({ ...form, batchType: e.target.value })}
+              >
+                {batchTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 🆕 Mode Dropdown */}
+            <div className="form-group">
+              <label className="form-label">Mode *</label>
+              <select
+                className="form-control"
+                value={form.mode}
+                onChange={(e) => setForm({ ...form, mode: e.target.value })}
+              >
+                {modeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div
@@ -1018,7 +1099,7 @@ export default function ManageStudents() {
         </div>
       )}
 
-      {/* Assign/Change Teacher Modal with Subject Validation */}
+      {/* Assign/Change Teacher Modal */}
       {isAdmin && showAssignModal && selectedStudent && (
         <div
           className="modal-overlay"
@@ -1031,8 +1112,7 @@ export default function ManageStudents() {
           >
             <div className="modal-header">
               <h3 className="modal-title">
-                {selectedStudent.teacher ? "Change Teacher" : "Assign Teacher"}{" "}
-                for {selectedStudent.name}
+                {selectedStudent.teacher ? "Change Teacher" : "Assign Teacher"} for {selectedStudent.name}
               </h3>
               <button
                 className="modal-close"
@@ -1042,48 +1122,28 @@ export default function ManageStudents() {
               </button>
             </div>
 
-            {/* Current Teacher Info */}
             {selectedStudent.teacher && (
-              <div
-                style={{
-                  padding: "10px 14px",
-                  background: "#f0fdf4",
-                  borderRadius: "8px",
-                  border: "1px solid #bbf7d0",
-                  marginBottom: "12px",
-                }}
-              >
-                <strong>Current Teacher:</strong>
+              <div style={{ 
+                padding: "10px 14px", 
+                background: "#f0fdf4", 
+                borderRadius: "8px",
+                border: "1px solid #bbf7d0",
+                marginBottom: "12px"
+              }}>
+                <strong>Current Teacher:</strong> 
                 <span style={{ marginLeft: "8px", fontWeight: "600" }}>
                   {selectedStudent.teacher.name}
                 </span>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "var(--gray-500)",
-                    marginLeft: "8px",
-                  }}
-                >
-                  (
-                  {selectedStudent.teacher.subjects?.join(", ") ||
-                    "No subjects"}
-                  )
+                <span style={{ fontSize: "12px", color: "var(--gray-500)", marginLeft: "8px" }}>
+                  ({selectedStudent.teacher.subjects?.join(", ") || "No subjects"})
                 </span>
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={async () => {
-                    if (
-                      window.confirm(
-                        `Remove teacher "${selectedStudent.teacher.name}" from ${selectedStudent.name}?`,
-                      )
-                    ) {
+                    if (window.confirm(`Remove teacher "${selectedStudent.teacher.name}" from ${selectedStudent.name}?`)) {
                       try {
-                        await api.delete(
-                          `/admin/students/${selectedStudent._id}/teacher`,
-                        );
-                        showToast(
-                          `✅ Teacher removed from ${selectedStudent.name}`,
-                        );
+                        await api.delete(`/admin/students/${selectedStudent._id}/teacher`);
+                        showToast(`✅ Teacher removed from ${selectedStudent.name}`);
                         setShowAssignModal(false);
                         fetchAll();
                       } catch (err) {
@@ -1091,11 +1151,7 @@ export default function ManageStudents() {
                       }
                     }
                   }}
-                  style={{
-                    marginLeft: "12px",
-                    padding: "2px 10px",
-                    fontSize: "11px",
-                  }}
+                  style={{ marginLeft: "12px", padding: "2px 10px", fontSize: "11px" }}
                 >
                   ✕ Remove
                 </button>
@@ -1103,38 +1159,32 @@ export default function ManageStudents() {
             )}
 
             <div style={{ marginBottom: "12px" }}>
-              <div
-                style={{
-                  fontSize: "13px",
-                  padding: "10px 14px",
-                  background: "#f0fdf4",
-                  borderRadius: "8px",
-                  border: "1px solid #bbf7d0",
-                  marginBottom: "8px",
-                }}
-              >
-                <strong>📚 Student Subjects:</strong>
+              <div style={{ 
+                fontSize: "13px", 
+                padding: "10px 14px", 
+                background: "#f0fdf4", 
+                borderRadius: "8px",
+                border: "1px solid #bbf7d0",
+                marginBottom: "8px"
+              }}>
+                <strong>📚 Student Subjects:</strong> 
                 <span style={{ marginLeft: "8px" }}>
-                  {selectedStudent.subjects?.length > 0
-                    ? selectedStudent.subjects.join(", ")
+                  {selectedStudent.subjects?.length > 0 
+                    ? selectedStudent.subjects.join(", ") 
                     : "No subjects assigned"}
                 </span>
               </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  padding: "8px 14px",
-                  background: "#fef3c7",
-                  borderRadius: "8px",
-                  border: "1px solid #fcd34d",
-                }}
-              >
-                <strong>⚠️ Note:</strong> Only teachers with matching subjects
-                will be shown.
+              <div style={{ 
+                fontSize: "12px", 
+                padding: "8px 14px", 
+                background: "#fef3c7", 
+                borderRadius: "8px",
+                border: "1px solid #fcd34d"
+              }}>
+                <strong>⚠️ Note:</strong> Only teachers with matching subjects will be shown.
                 <br />
                 <span style={{ fontSize: "11px", color: "var(--gray-500)" }}>
-                  Teacher must have at least one subject that matches student's
-                  subjects.
+                  Teacher must have at least one subject that matches student's subjects.
                 </span>
               </div>
             </div>
@@ -1156,67 +1206,37 @@ export default function ManageStudents() {
                 }}
                 style={{ marginBottom: "12px" }}
               />
-
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "var(--gray-500)",
-                  marginBottom: "8px",
-                }}
-              >
-                Showing{" "}
-                {
-                  teachers.filter((t) => {
-                    const studentSubjects = (
-                      selectedStudent.subjects || []
-                    ).map((s) => s.toUpperCase());
-                    const teacherSubjects = (t.subjects || []).map((s) =>
-                      s.toUpperCase(),
-                    );
-                    return studentSubjects.some((sub) =>
-                      teacherSubjects.includes(sub),
-                    );
-                  }).length
-                }{" "}
-                matching teachers
+              
+              <div style={{ 
+                fontSize: "12px", 
+                color: "var(--gray-500)", 
+                marginBottom: "8px" 
+              }}>
+                Showing {teachers.filter(t => {
+                  const studentSubjects = (selectedStudent.subjects || []).map(s => s.toUpperCase());
+                  const teacherSubjects = (t.subjects || []).map(s => s.toUpperCase());
+                  return studentSubjects.some(sub => teacherSubjects.includes(sub));
+                }).length} matching teachers
               </div>
 
-              <div
-                style={{
-                  maxHeight: "350px",
-                  overflowY: "auto",
-                  border: "1px solid var(--gray-200)",
-                  borderRadius: "8px",
-                }}
-              >
+              <div style={{ maxHeight: "350px", overflowY: "auto", border: "1px solid var(--gray-200)", borderRadius: "8px" }}>
                 {teachers.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "20px",
-                      textAlign: "center",
-                      color: "var(--gray-500)",
-                    }}
-                  >
+                  <div style={{ padding: "20px", textAlign: "center", color: "var(--gray-500)" }}>
                     No teachers available. Please add teachers first.
                   </div>
                 ) : (
                   teachers
                     .filter((t) => t._id !== selectedStudent.teacher?._id)
                     .map((teacher) => {
-                      const studentSubjects = (
-                        selectedStudent.subjects || []
-                      ).map((s) => s.toUpperCase().trim());
-                      const teacherSubjects = (teacher.subjects || []).map(
-                        (s) => s.toUpperCase().trim(),
-                      );
-
-                      const matchingSubjects = studentSubjects.filter((sub) =>
-                        teacherSubjects.includes(sub),
+                      const studentSubjects = (selectedStudent.subjects || []).map(s => s.toUpperCase().trim());
+                      const teacherSubjects = (teacher.subjects || []).map(s => s.toUpperCase().trim());
+                      
+                      const matchingSubjects = studentSubjects.filter(sub => 
+                        teacherSubjects.includes(sub)
                       );
                       const hasMatchingSubject = matchingSubjects.length > 0;
-                      const isCurrentlyAssigned =
-                        selectedStudent.teacher?._id === teacher._id;
-
+                      const isCurrentlyAssigned = selectedStudent.teacher?._id === teacher._id;
+                      
                       return (
                         <div
                           key={teacher._id}
@@ -1227,21 +1247,10 @@ export default function ManageStudents() {
                             justifyContent: "space-between",
                             padding: "12px 16px",
                             borderBottom: "1px solid var(--gray-100)",
-                            cursor:
-                              hasMatchingSubject && !isCurrentlyAssigned
-                                ? "pointer"
-                                : "default",
-                            opacity: isCurrentlyAssigned
-                              ? 0.6
-                              : hasMatchingSubject
-                                ? 1
-                                : 0.5,
+                            cursor: hasMatchingSubject && !isCurrentlyAssigned ? "pointer" : "default",
+                            opacity: isCurrentlyAssigned ? 0.6 : (hasMatchingSubject ? 1 : 0.5),
                             transition: "background 0.2s",
-                            background: isCurrentlyAssigned
-                              ? "#f3f4f6"
-                              : hasMatchingSubject
-                                ? "transparent"
-                                : "#fafafa",
+                            background: isCurrentlyAssigned ? "#f3f4f6" : (hasMatchingSubject ? "transparent" : "#fafafa"),
                           }}
                           onClick={() => {
                             if (hasMatchingSubject && !isCurrentlyAssigned) {
@@ -1250,8 +1259,7 @@ export default function ManageStudents() {
                           }}
                           onMouseEnter={(e) => {
                             if (hasMatchingSubject && !isCurrentlyAssigned) {
-                              e.currentTarget.style.background =
-                                "var(--gray-50)";
+                              e.currentTarget.style.background = "var(--gray-50)";
                             }
                           }}
                           onMouseLeave={(e) => {
@@ -1261,101 +1269,64 @@ export default function ManageStudents() {
                           }}
                         >
                           <div style={{ flex: 1 }}>
-                            <div
-                              style={{
-                                fontWeight: 600,
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                              }}
-                            >
+                            <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: "8px" }}>
                               {teacher.name}
                               {isCurrentlyAssigned && (
-                                <span
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#16a34a",
-                                    background: "#d1fae5",
-                                    padding: "2px 10px",
-                                    borderRadius: "12px",
-                                  }}
-                                >
+                                <span style={{ 
+                                  fontSize: "11px", 
+                                  color: "#16a34a", 
+                                  background: "#d1fae5", 
+                                  padding: "2px 10px", 
+                                  borderRadius: "12px" 
+                                }}>
                                   Currently Assigned
                                 </span>
                               )}
                             </div>
-                            <div
-                              style={{
-                                fontSize: "12px",
-                                color: "var(--gray-500)",
-                                marginTop: "2px",
-                              }}
-                            >
-                              <span style={{ fontWeight: "500" }}>
-                                Teaches:
-                              </span>
-                              {teacher.subjects?.length > 0
-                                ? teacher.subjects.join(", ")
+                            <div style={{ fontSize: "12px", color: "var(--gray-500)", marginTop: "2px" }}>
+                              <span style={{ fontWeight: "500" }}>Teaches:</span> 
+                              {teacher.subjects?.length > 0 
+                                ? teacher.subjects.join(", ") 
                                 : "No subjects assigned"}
                             </div>
                             {hasMatchingSubject && !isCurrentlyAssigned && (
-                              <div
-                                style={{
-                                  fontSize: "11px",
-                                  color: "#16a34a",
-                                  marginTop: "2px",
-                                  fontWeight: "500",
-                                }}
-                              >
-                                ✅ Matching subjects:{" "}
-                                {matchingSubjects.join(", ")}
+                              <div style={{ 
+                                fontSize: "11px", 
+                                color: "#16a34a", 
+                                marginTop: "2px",
+                                fontWeight: "500"
+                              }}>
+                                ✅ Matching subjects: {matchingSubjects.join(", ")}
                               </div>
                             )}
                             {!hasMatchingSubject && !isCurrentlyAssigned && (
-                              <div
-                                style={{
-                                  fontSize: "11px",
-                                  color: "#dc2626",
-                                  marginTop: "2px",
-                                }}
-                              >
+                              <div style={{ 
+                                fontSize: "11px", 
+                                color: "#dc2626", 
+                                marginTop: "2px"
+                              }}>
                                 ⚠️ No matching subjects
-                                <span
-                                  style={{
-                                    fontSize: "10px",
-                                    color: "var(--gray-400)",
-                                    marginLeft: "4px",
-                                    fontStyle: "italic",
-                                  }}
-                                >
-                                  (Student:{" "}
-                                  {studentSubjects.join(", ") || "None"})
+                                <span style={{ 
+                                  fontSize: "10px", 
+                                  color: "var(--gray-400)", 
+                                  marginLeft: "4px",
+                                  fontStyle: "italic"
+                                }}>
+                                  (Student: {studentSubjects.join(", ") || "None"})
                                 </span>
                               </div>
                             )}
                           </div>
-                          <button
+                          <button 
                             className={`btn ${isCurrentlyAssigned ? "btn-outline" : "btn-primary"} btn-sm`}
-                            disabled={
-                              !hasMatchingSubject || isCurrentlyAssigned
-                            }
+                            disabled={!hasMatchingSubject || isCurrentlyAssigned}
                             style={{
-                              opacity:
-                                hasMatchingSubject && !isCurrentlyAssigned
-                                  ? 1
-                                  : 0.5,
-                              cursor:
-                                hasMatchingSubject && !isCurrentlyAssigned
-                                  ? "pointer"
-                                  : "not-allowed",
-                              minWidth: "70px",
+                              opacity: (hasMatchingSubject && !isCurrentlyAssigned) ? 1 : 0.5,
+                              cursor: (hasMatchingSubject && !isCurrentlyAssigned) ? "pointer" : "not-allowed",
+                              minWidth: "70px"
                             }}
                           >
-                            {isCurrentlyAssigned
-                              ? "✅ Assigned"
-                              : hasMatchingSubject
-                                ? "Assign"
-                                : "No Match"}
+                            {isCurrentlyAssigned ? "✅ Assigned" : (hasMatchingSubject ? "Assign" : "No Match")}
                           </button>
                         </div>
                       );
