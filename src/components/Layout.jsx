@@ -232,7 +232,7 @@ export default function Layout() {
              <img src="../logo whc.png" alt="" />
           </div>
             <div className="logo-image-wrapper">
-              <img src="/logo.jpeg" alt="Logo" className="sidebar-logo-img" />
+              {/* <img src="/logo.jpeg" alt="Logo" className="sidebar-logo-img" /> */}
             </div>
             {/* Removed text logo - only image */}
           </div>
