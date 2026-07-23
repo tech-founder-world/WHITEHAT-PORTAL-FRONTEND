@@ -1,5 +1,102 @@
 /* ===== LAYOUT CSS ===== */
+/* ===== LOGO IMAGE STYLES ===== */
 
+/* Sidebar Logo Image */
+.logo-image-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-speed);
+}
+
+.sidebar-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  transition: all var(--transition-speed);
+}
+
+.layout.collapsed .sidebar-logo-img {
+  height: 32px;
+}
+
+/* Mobile Logo Image */
+.mobile-logo-img {
+  height: 35px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Remove old logo text styles */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* When sidebar is collapsed, keep logo visible */
+.layout.collapsed .sidebar-logo {
+  justify-content: center;
+}
+
+/* ===== SIDEBAR HEADER ===== */
+.sidebar-header {
+  padding: 16px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 74px;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-width, 260px);
+  min-height: 100vh;
+  background: var(--white);
+  border-right: 1px solid var(--gray-100);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+  transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  overflow-x: hidden;
+}
+
+.layout.collapsed .sidebar {
+  width: var(--sidebar-collapsed-width, 72px);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .sidebar-logo-img {
+    height: 35px;
+  }
+
+  .mobile-logo-img {
+    height: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-logo-img {
+    height: 30px;
+  }
+
+  .mobile-logo-img {
+    height: 28px;
+  }
+}
 /* ===== MOBILE HEADER ===== */
 .mobile-header {
   display: none;
