@@ -98,7 +98,6 @@ export default function App() {
             <Route path="students" element={<ManageStudents />} />
             <Route path="history" element={<AttendanceHistory />} />
             <Route path="evaluations" element={<Evaluations />} />
-            <Route path="batches" element={<CounsellorBatches />} />
             <Route path="track" element={<CounsellorTrack />} />
             <Route path="placements" element={<Placement />} />
           </Route>
