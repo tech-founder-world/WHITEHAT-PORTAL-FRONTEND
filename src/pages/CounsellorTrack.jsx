@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from '../api';
-import '../css/CounsellorTrack.css';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import api from "../api";
+import "../css/CounsellorTrack.css";
 
 export default function CounsellorTrack() {
   const { user } = useAuth();
@@ -26,9 +26,7 @@ export default function CounsellorTrack() {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      console.log("📡 Fetching placement applications for counsellor...");
       const response = await api.get("/placement/applications/all");
-      console.log("✅ Applications loaded:", response.data?.length || 0);
       setApplications(response.data || []);
     } catch (err) {
       console.error("Error fetching applications:", err);
@@ -46,8 +44,12 @@ export default function CounsellorTrack() {
       totalFees: application.totalFees || 0,
       feesPaid: application.feesPaid || 0,
       feesPending: application.feesPending || 0,
-      joinedDate: application.joinedDate ? new Date(application.joinedDate).toISOString().split('T')[0] : "",
-      endedDate: application.endedDate ? new Date(application.endedDate).toISOString().split('T')[0] : "",
+      joinedDate: application.joinedDate
+        ? new Date(application.joinedDate).toISOString().split("T")[0]
+        : "",
+      endedDate: application.endedDate
+        ? new Date(application.endedDate).toISOString().split("T")[0]
+        : "",
       totalInterviewsGiven: application.totalInterviewsGiven || 0,
       totalInterviewsRejected: application.totalInterviewsRejected || 0,
       totalInterviewsSelected: application.totalInterviewsSelected || 0,
@@ -79,9 +81,11 @@ export default function CounsellorTrack() {
         totalInterviewsRejected: Number(editData.totalInterviewsRejected) || 0,
       };
 
-      console.log("📦 Updating application:", payload);
-      const response = await api.put(`/placement/applications/${applicationId}/counsellor-update`, payload);
-      
+      const response = await api.put(
+        `/placement/applications/${applicationId}/counsellor-update`,
+        payload,
+      );
+
       if (response.data.success) {
         showToast("✅ Student updated successfully!");
         setEditingId(null);
@@ -89,30 +93,41 @@ export default function CounsellorTrack() {
       }
     } catch (err) {
       console.error("Error updating application:", err);
-      showToast(err.response?.data?.message || "Error updating student", "error");
+      showToast(
+        err.response?.data?.message || "Error updating student",
+        "error",
+      );
     }
   };
 
   // Handle adding interview log
   const handleAddInterview = async (applicationId, status, notes) => {
     try {
-      const response = await api.post(`/placement/applications/${applicationId}/interview`, {
-        status,
-        notes
-      });
-      
+      const response = await api.post(
+        `/placement/applications/${applicationId}/interview`,
+        {
+          status,
+          notes,
+        },
+      );
+
       if (response.data.success) {
         showToast("✅ Interview logged successfully!");
         fetchApplications();
         // Refresh the modal data
         if (selectedStudent) {
-          const updatedStudent = await api.get(`/placement/applications/${applicationId}`);
+          const updatedStudent = await api.get(
+            `/placement/applications/${applicationId}`,
+          );
           setSelectedStudent(updatedStudent.data);
         }
       }
     } catch (err) {
       console.error("Error adding interview:", err);
-      showToast(err.response?.data?.message || "Error logging interview", "error");
+      showToast(
+        err.response?.data?.message || "Error logging interview",
+        "error",
+      );
     }
   };
 
@@ -122,8 +137,8 @@ export default function CounsellorTrack() {
       setSelectedStudent(response.data);
       setShowInterviewModal(true);
     } catch (error) {
-      console.error('Error fetching student details:', error);
-      showToast('Error loading student details', 'error');
+      console.error("Error fetching student details:", error);
+      showToast("Error loading student details", "error");
     }
   };
 
@@ -143,15 +158,15 @@ export default function CounsellorTrack() {
 
   const getStatusBadge = (status) => {
     const colors = {
-      pending: '#f59e0b',
-      shortlisted: '#3b82f6',
-      selected: '#22c55e',
-      rejected: '#ef4444',
-      interview_scheduled: '#8b5cf6'
+      pending: "#f59e0b",
+      shortlisted: "#3b82f6",
+      selected: "#22c55e",
+      rejected: "#ef4444",
+      interview_scheduled: "#8b5cf6",
     };
     return {
-      background: colors[status] || '#6b7280',
-      color: 'white'
+      background: colors[status] || "#6b7280",
+      color: "white",
     };
   };
 
@@ -170,8 +185,16 @@ export default function CounsellorTrack() {
 
       <div className="page-header">
         <h1 className="page-title">🎯 Student Tracker</h1>
-        <p className="page-subtitle">Track and update student placement applications</p>
-        <p style={{ fontSize: "14px", color: "var(--text-muted)", marginTop: "4px" }}>
+        <p className="page-subtitle">
+          Track and update student placement applications
+        </p>
+        <p
+          style={{
+            fontSize: "14px",
+            color: "var(--text-muted)",
+            marginTop: "4px",
+          }}
+        >
           📊 Total Students: {applications.length}
         </p>
       </div>
@@ -309,24 +332,38 @@ export default function CounsellorTrack() {
                             type="number"
                             className="form-control form-control-sm"
                             value={editData.totalInterviewsGiven}
-                            onChange={(e) => handleInputChange(e, "totalInterviewsGiven")}
+                            onChange={(e) =>
+                              handleInputChange(e, "totalInterviewsGiven")
+                            }
                             min="0"
                           />
                         </td>
                         <td style={{ color: "#16a34a", fontWeight: "bold" }}>
-                          {editData.totalInterviewsGiven - editData.totalInterviewsRejected}
+                          {editData.totalInterviewsGiven -
+                            editData.totalInterviewsRejected}
                         </td>
                         <td>
                           <input
                             type="number"
                             className="form-control form-control-sm"
                             value={editData.totalInterviewsRejected}
-                            onChange={(e) => handleInputChange(e, "totalInterviewsRejected")}
+                            onChange={(e) =>
+                              handleInputChange(e, "totalInterviewsRejected")
+                            }
                             min="0"
                           />
                         </td>
                         <td>
-                          <span className="status-pill" style={{ background: '#f59e0b', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px' }}>
+                          <span
+                            className="status-pill"
+                            style={{
+                              background: "#f59e0b",
+                              color: "white",
+                              padding: "4px 12px",
+                              borderRadius: "20px",
+                              fontSize: "12px",
+                            }}
+                          >
                             {app.status || "pending"}
                           </span>
                         </td>
@@ -351,25 +388,34 @@ export default function CounsellorTrack() {
                   }
 
                   return (
-                    <tr 
-                      key={app._id} 
-                      onClick={() => viewStudentDetails(app)} 
-                      style={{ cursor: 'pointer' }}
+                    <tr
+                      key={app._id}
+                      onClick={() => viewStudentDetails(app)}
+                      style={{ cursor: "pointer" }}
                       className="clickable-row"
                     >
                       <td>{index + 1}</td>
-                      <td><strong>{app.studentName}</strong></td>
+                      <td>
+                        <strong>{app.studentName}</strong>
+                      </td>
                       <td>{app.studentEmail}</td>
                       <td>{app.studentPhone || "N/A"}</td>
                       <td>{app.placementForm?.formTitle || "N/A"}</td>
                       <td>
-                        <span className={`course-pill ${app.courseType?.toLowerCase() || "silver"}`}>
+                        <span
+                          className={`course-pill ${app.courseType?.toLowerCase() || "silver"}`}
+                        >
                           {getCourseLabel(app.courseType)}
                         </span>
                       </td>
                       <td>₹{app.totalFees || 0}</td>
                       <td style={{ color: "#16a34a" }}>₹{app.feesPaid || 0}</td>
-                      <td style={{ color: (app.feesPending || 0) > 0 ? "#dc2626" : "#16a34a" }}>
+                      <td
+                        style={{
+                          color:
+                            (app.feesPending || 0) > 0 ? "#dc2626" : "#16a34a",
+                        }}
+                      >
                         ₹{app.feesPending || 0}
                       </td>
                       <td>{formatDate(app.joinedDate)}</td>
@@ -378,18 +424,20 @@ export default function CounsellorTrack() {
                       <td style={{ color: "#16a34a", fontWeight: "bold" }}>
                         {app.totalInterviewsSelected || 0}
                       </td>
-                      <td style={{ color: "#dc2626" }}>{app.totalInterviewsRejected || 0}</td>
+                      <td style={{ color: "#dc2626" }}>
+                        {app.totalInterviewsRejected || 0}
+                      </td>
                       <td>
-                        <span 
-                          className="status-pill" 
-                          style={{ 
-                            background: getStatusBadge(app.status).background, 
-                            color: 'white',
+                        <span
+                          className="status-pill"
+                          style={{
+                            background: getStatusBadge(app.status).background,
+                            color: "white",
                             padding: "4px 12px",
                             borderRadius: "20px",
                             fontSize: "12px",
                             fontWeight: "500",
-                            display: "inline-block"
+                            display: "inline-block",
                           }}
                         >
                           {app.status || "pending"}
@@ -399,13 +447,19 @@ export default function CounsellorTrack() {
                         <div className="action-buttons">
                           <button
                             className="btn btn-primary btn-sm"
-                            onClick={(e) => { e.stopPropagation(); handleEditClick(app); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(app);
+                            }}
                           >
                             ✏️ Update
                           </button>
                           <button
                             className="btn btn-outline btn-sm"
-                            onClick={(e) => { e.stopPropagation(); viewStudentDetails(app); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              viewStudentDetails(app);
+                            }}
                           >
                             📊 Details
                           </button>
@@ -422,61 +476,145 @@ export default function CounsellorTrack() {
 
       {/* Student Details & Interview Modal */}
       {showInterviewModal && selectedStudent && (
-        <div className="modal-overlay" onClick={() => setShowInterviewModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowInterviewModal(false)}
+        >
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "800px" }}
+          >
             <div className="modal-header">
-              <h3 className="modal-title">📊 Student Details: <span style={{ color: '#f97316' }}>{selectedStudent.studentName}</span></h3>
-              <button className="modal-close" onClick={() => setShowInterviewModal(false)}>×</button>
+              <h3 className="modal-title">
+                📊 Student Details:{" "}
+                <span style={{ color: "#f97316" }}>
+                  {selectedStudent.studentName}
+                </span>
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowInterviewModal(false)}
+              >
+                ×
+              </button>
             </div>
             <div className="modal-body">
               {/* Student Info Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                <div><strong>Email:</strong> {selectedStudent.studentEmail}</div>
-                <div><strong>Phone:</strong> {selectedStudent.studentPhone}</div>
-                <div><strong>Father's Name:</strong> {selectedStudent.fatherName || 'N/A'}</div>
-                <div><strong>Course:</strong> {selectedStudent.courseType}</div>
-                <div><strong>Timing:</strong> {selectedStudent.courseTiming || 'N/A'}</div>
-                <div><strong>Branch:</strong> {selectedStudent.branch || 'N/A'}</div>
-                <div><strong>Total Fees:</strong> ₹{selectedStudent.totalFees || 0}</div>
-                <div><strong>Fees Paid:</strong> ₹{selectedStudent.feesPaid || 0}</div>
-                <div><strong>Fees Pending:</strong> ₹{selectedStudent.feesPending || 0}</div>
-                <div><strong>Joined:</strong> {formatDate(selectedStudent.joinedDate)}</div>
-                <div><strong>Ended:</strong> {formatDate(selectedStudent.endedDate)}</div>
-                <div><strong>Resume:</strong> {selectedStudent.resumeLink ? <a href={selectedStudent.resumeLink} target="_blank" rel="noopener noreferrer">🔗 View</a> : 'N/A'}</div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: "12px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div>
+                  <strong>Email:</strong> {selectedStudent.studentEmail}
+                </div>
+                <div>
+                  <strong>Phone:</strong> {selectedStudent.studentPhone}
+                </div>
+                <div>
+                  <strong>Father's Name:</strong>{" "}
+                  {selectedStudent.fatherName || "N/A"}
+                </div>
+                <div>
+                  <strong>Course:</strong> {selectedStudent.courseType}
+                </div>
+                <div>
+                  <strong>Timing:</strong>{" "}
+                  {selectedStudent.courseTiming || "N/A"}
+                </div>
+                <div>
+                  <strong>Branch:</strong> {selectedStudent.branch || "N/A"}
+                </div>
+                <div>
+                  <strong>Total Fees:</strong> ₹{selectedStudent.totalFees || 0}
+                </div>
+                <div>
+                  <strong>Fees Paid:</strong> ₹{selectedStudent.feesPaid || 0}
+                </div>
+                <div>
+                  <strong>Fees Pending:</strong> ₹
+                  {selectedStudent.feesPending || 0}
+                </div>
+                <div>
+                  <strong>Joined:</strong>{" "}
+                  {formatDate(selectedStudent.joinedDate)}
+                </div>
+                <div>
+                  <strong>Ended:</strong>{" "}
+                  {formatDate(selectedStudent.endedDate)}
+                </div>
+                <div>
+                  <strong>Resume:</strong>{" "}
+                  {selectedStudent.resumeLink ? (
+                    <a
+                      href={selectedStudent.resumeLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      🔗 View
+                    </a>
+                  ) : (
+                    "N/A"
+                  )}
+                </div>
               </div>
 
               {/* Add Interview Section */}
-              <div style={{ marginBottom: '20px', borderTop: '1px solid #e5e7eb', paddingTop: '15px' }}>
-                <h4 style={{ margin: '0 0 10px 0' }}>➕ Add Interview Log</h4>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <select 
+              <div
+                style={{
+                  marginBottom: "20px",
+                  borderTop: "1px solid #e5e7eb",
+                  paddingTop: "15px",
+                }}
+              >
+                <h4 style={{ margin: "0 0 10px 0" }}>➕ Add Interview Log</h4>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <select
                     id="interviewStatus"
-                    className="form-control" 
-                    style={{ maxWidth: '180px' }}
+                    className="form-control"
+                    style={{ maxWidth: "180px" }}
                   >
                     <option value="shortlisted">Shortlisted</option>
                     <option value="selected">Selected</option>
                     <option value="rejected">Rejected</option>
-                    <option value="interview_scheduled">Interview Scheduled</option>
+                    <option value="interview_scheduled">
+                      Interview Scheduled
+                    </option>
                     <option value="pending">Pending</option>
                   </select>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     id="interviewNotes"
-                    placeholder="Add notes..." 
-                    className="form-control" 
-                    style={{ flex: 1, minWidth: '150px' }}
+                    placeholder="Add notes..."
+                    className="form-control"
+                    style={{ flex: 1, minWidth: "150px" }}
                   />
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={() => {
-                      const status = document.getElementById('interviewStatus').value;
-                      const notes = document.getElementById('interviewNotes').value;
+                      const status =
+                        document.getElementById("interviewStatus").value;
+                      const notes =
+                        document.getElementById("interviewNotes").value;
                       if (notes) {
                         handleAddInterview(selectedStudent._id, status, notes);
-                        document.getElementById('interviewNotes').value = '';
+                        document.getElementById("interviewNotes").value = "";
                       } else {
-                        showToast('Please add notes for the interview', 'error');
+                        showToast(
+                          "Please add notes for the interview",
+                          "error",
+                        );
                       }
                     }}
                   >
@@ -486,9 +624,9 @@ export default function CounsellorTrack() {
               </div>
 
               {/* Interview History */}
-              <h4 style={{ margin: '0 0 10px 0' }}>📋 Interview History</h4>
+              <h4 style={{ margin: "0 0 10px 0" }}>📋 Interview History</h4>
               {selectedStudent.interviewLogs?.length === 0 ? (
-                <p style={{ color: '#6b7280' }}>No interview records yet.</p>
+                <p style={{ color: "#6b7280" }}>No interview records yet.</p>
               ) : (
                 <table className="interview-logs-table">
                   <thead>
@@ -504,19 +642,21 @@ export default function CounsellorTrack() {
                       <tr key={idx}>
                         <td>{new Date(log.date).toLocaleDateString()}</td>
                         <td>
-                          <span style={{ 
-                            background: getStatusBadge(log.status).background, 
-                            color: 'white',
-                            padding: '2px 10px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}>
+                          <span
+                            style={{
+                              background: getStatusBadge(log.status).background,
+                              color: "white",
+                              padding: "2px 10px",
+                              borderRadius: "20px",
+                              fontSize: "12px",
+                              fontWeight: "500",
+                            }}
+                          >
                             {log.status}
                           </span>
                         </td>
-                        <td>{log.notes || '-'}</td>
-                        <td>{log.updatedBy?.name || 'System'}</td>
+                        <td>{log.notes || "-"}</td>
+                        <td>{log.updatedBy?.name || "System"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -524,15 +664,41 @@ export default function CounsellorTrack() {
               )}
 
               {/* Summary Stats */}
-              <div style={{ marginTop: '15px', display: 'flex', gap: '20px', flexWrap: 'wrap', borderTop: '1px solid #e5e7eb', paddingTop: '15px' }}>
-                <div><strong>Total Interviews:</strong> {selectedStudent.totalInterviewsGiven || 0}</div>
-                <div style={{ color: '#3b82f6' }}><strong>Shortlisted:</strong> {selectedStudent.totalInterviewsShortlisted || 0}</div>
-                <div style={{ color: '#16a34a' }}><strong>Selected:</strong> {selectedStudent.totalInterviewsSelected || 0}</div>
-                <div style={{ color: '#dc2626' }}><strong>Rejected:</strong> {selectedStudent.totalInterviewsRejected || 0}</div>
+              <div
+                style={{
+                  marginTop: "15px",
+                  display: "flex",
+                  gap: "20px",
+                  flexWrap: "wrap",
+                  borderTop: "1px solid #e5e7eb",
+                  paddingTop: "15px",
+                }}
+              >
+                <div>
+                  <strong>Total Interviews:</strong>{" "}
+                  {selectedStudent.totalInterviewsGiven || 0}
+                </div>
+                <div style={{ color: "#3b82f6" }}>
+                  <strong>Shortlisted:</strong>{" "}
+                  {selectedStudent.totalInterviewsShortlisted || 0}
+                </div>
+                <div style={{ color: "#16a34a" }}>
+                  <strong>Selected:</strong>{" "}
+                  {selectedStudent.totalInterviewsSelected || 0}
+                </div>
+                <div style={{ color: "#dc2626" }}>
+                  <strong>Rejected:</strong>{" "}
+                  {selectedStudent.totalInterviewsRejected || 0}
+                </div>
               </div>
             </div>
             <div className="modal-actions">
-              <button onClick={() => setShowInterviewModal(false)} className="cancel-btn">Close</button>
+              <button
+                onClick={() => setShowInterviewModal(false)}
+                className="cancel-btn"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

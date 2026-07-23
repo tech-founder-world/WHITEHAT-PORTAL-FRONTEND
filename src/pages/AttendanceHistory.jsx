@@ -38,7 +38,6 @@ function StudentProfile({
           attRecords = attRes.data;
           evalRecords = evalRes.data;
         } else if (isCounsellor) {
-          // Counsellor: fetch all attendance and evaluations for this student
           const [attRes, evalRes] = await Promise.all([
             api.get(`/attendance?studentId=${student._id}`),
             api.get(`/evaluations?studentId=${student._id}`),
@@ -46,7 +45,6 @@ function StudentProfile({
           attRecords = attRes.data;
           evalRecords = evalRes.data;
         } else {
-          // Teacher: fetch one subject at a time
           const attResults = await Promise.all(
             teacherSubjects.map((sub) =>
               api
@@ -71,7 +69,6 @@ function StudentProfile({
           evalRecords = evalResults.flat();
         }
 
-        // Group attendance by subject, sorted newest first
         const bySubject = {};
         attRecords.forEach((r) => {
           if (!bySubject[r.subject]) bySubject[r.subject] = [];
@@ -85,7 +82,6 @@ function StudentProfile({
           evalRecords.sort((a, b) => b.date.localeCompare(a.date)),
         );
       } catch (err) {
-        console.error("Error loading student data:", err);
         showToast("Error loading student data", "error");
       } finally {
         setLoading(false);
@@ -99,7 +95,6 @@ function StudentProfile({
       await api.put(`/attendance/${record._id}`, { status: newStatus });
       showToast("Attendance updated");
 
-      // Refresh attendance
       let attRecords = [];
       if (isAdmin || isCounsellor) {
         const r = await api.get(`/attendance?studentId=${student._id}`);
@@ -127,13 +122,11 @@ function StudentProfile({
       });
       setAttendanceBySubject(bySubject);
     } catch (err) {
-      console.error("Error updating attendance:", err);
       showToast("Error updating attendance", "error");
     }
     setEditRecord(null);
   };
 
-  // Compute overall stats per subject
   const subjectStats = Object.entries(attendanceBySubject).map(
     ([sub, records]) => {
       const present = records.filter((r) => r.status === "present").length;
@@ -150,7 +143,6 @@ function StudentProfile({
           <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
         )}
 
-        {/* Header */}
         <div className="profile-header">
           <div className="profile-avatar">
             {student.name?.[0]?.toUpperCase() || "U"}
@@ -175,7 +167,6 @@ function StudentProfile({
           </button>
         </div>
 
-        {/* Quick stats row */}
         {!loading && subjectStats.length > 0 && (
           <div className="profile-stats-row">
             {subjectStats.map((s) => {
@@ -214,7 +205,6 @@ function StudentProfile({
           </div>
         )}
 
-        {/* Tabs */}
         <div className="tabs-row" style={{ margin: "0 0 16px 0" }}>
           <button
             className={`tab-btn ${tab === "attendance" ? "active" : ""}`}
@@ -510,35 +500,24 @@ export default function AttendanceHistory() {
         let allStudents = [];
 
         if (isAdmin) {
-          console.log("Admin fetching all students...");
           const stuRes = await api.get("/students");
           allStudents = stuRes.data || [];
-          console.log("Students fetched:", allStudents.length);
 
-          // Get all subjects from students
           const s = new Set();
           allStudents.forEach((st) =>
             st.subjects?.forEach((sub) => s.add(sub)),
           );
           setAllSubjects([...s].sort());
         } else if (isCounsellor) {
-          console.log("Counsellor fetching assigned students...");
           const stuRes = await api.get("/counsellor/students");
           allStudents = stuRes.data || [];
-          console.log("Assigned students fetched:", allStudents.length);
 
-          // Get all subjects from assigned students
           const s = new Set();
           allStudents.forEach((st) =>
             st.subjects?.forEach((sub) => s.add(sub)),
           );
           setAllSubjects([...s].sort());
         } else {
-          // Teacher
-          console.log(
-            "Teacher fetching students for subjects:",
-            teacherSubjects,
-          );
           setAllSubjects(teacherSubjects);
 
           if (teacherSubjects.length > 0) {
@@ -560,18 +539,12 @@ export default function AttendanceHistory() {
               });
             });
             allStudents.sort((a, b) => a.name?.localeCompare(b.name) || 0);
-            console.log("Students fetched for teacher:", allStudents.length);
-          } else {
-            console.log("No subjects assigned to teacher");
           }
         }
 
         setStudents(allStudents);
 
-        // Fetch attendance stats
-        console.log("Fetching attendance stats...");
         const statsRes = await api.get("/attendance/stats");
-        console.log("Stats response:", statsRes.data);
 
         const map = {};
         statsRes.data.forEach((s) => {
@@ -584,9 +557,7 @@ export default function AttendanceHistory() {
           }
         });
         setStatsMap(map);
-        console.log("Stats map created:", Object.keys(map).length);
       } catch (err) {
-        console.error("Error loading data:", err);
         showToast(
           "Error loading data: " + (err.response?.data?.message || err.message),
           "error",
@@ -627,7 +598,6 @@ export default function AttendanceHistory() {
         </p>
       </div>
 
-      {/* Filters */}
       <div
         className="card filters-card"
         style={{
@@ -678,7 +648,6 @@ export default function AttendanceHistory() {
         </span>
       </div>
 
-      {/* Student cards grid */}
       {loading ? (
         <div className="loading-wrapper">
           <div className="spinner" />
@@ -788,7 +757,6 @@ export default function AttendanceHistory() {
         </div>
       )}
 
-      {/* Student Profile Drawer */}
       {selectedStudent && (
         <StudentProfile
           student={selectedStudent}

@@ -9,9 +9,17 @@ const emptyForm = {
   email: "",
   phone: "",
   subjects: [],
+  batchDuration: "45 days",
   totalFee: 0,
   paidAmount: 0,
 };
+
+const batchDurationOptions = [
+  { value: "45 days", label: "45 Days" },
+  { value: "3 months", label: "3 Months" },
+  { value: "4 months", label: "4 Months" },
+  { value: "6 months", label: "6 Months" },
+];
 
 export default function ManageStudents() {
   const { user } = useAuth();
@@ -141,6 +149,7 @@ export default function ManageStudents() {
       email: s.email || "",
       phone: s.phone || "",
       subjects: s.subjects || [],
+      batchDuration: s.batchDuration || "45 days",
       totalFee: s.totalFee || 0,
       paidAmount: s.paidAmount || 0,
     });
@@ -154,38 +163,13 @@ export default function ManageStudents() {
     setShowAssignModal(true);
   };
 
-  // 🆕 Function to remove teacher from student
-  const handleRemoveTeacher = async (student) => {
-    if (
-      !window.confirm(
-        `Remove teacher "${student.teacher?.name}" from ${student.name}?`,
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await api.delete(`/admin/students/${student._id}/teacher`);
-      showToast(`✅ Teacher removed from ${student.name} successfully`);
-      fetchAll();
-    } catch (err) {
-      console.error("Error removing teacher:", err);
-      showToast(
-        err.response?.data?.message || "Error removing teacher",
-        "error",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const toggleSubject = (sub) => {
+    const capitalizedSub = sub.toUpperCase();
     setForm((prev) => ({
       ...prev,
-      subjects: prev.subjects.includes(sub)
-        ? prev.subjects.filter((s) => s !== sub)
-        : [...prev.subjects, sub],
+      subjects: prev.subjects.includes(capitalizedSub)
+        ? prev.subjects.filter((s) => s !== capitalizedSub)
+        : [...prev.subjects, capitalizedSub],
     }));
   };
 
@@ -248,6 +232,7 @@ export default function ManageStudents() {
         email: cleanEmail,
         phone: form.phone.trim(),
         subjects: form.subjects.map((s) => s.toUpperCase()),
+        batchDuration: form.batchDuration || "45 days",
         totalFee: form.totalFee || 0,
         paidAmount: form.paidAmount || 0,
       };
@@ -300,6 +285,31 @@ export default function ManageStudents() {
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Error assigning teacher";
       showToast(errorMsg, "error");
+    }
+  };
+
+  const handleRemoveTeacher = async (student) => {
+    if (
+      !window.confirm(
+        `Remove teacher "${student.teacher?.name}" from ${student.name}?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.delete(`/admin/students/${student._id}/teacher`);
+      showToast(`✅ Teacher removed from ${student.name} successfully`);
+      fetchAll();
+    } catch (err) {
+      console.error("Error removing teacher:", err);
+      showToast(
+        err.response?.data?.message || "Error removing teacher",
+        "error",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -551,6 +561,7 @@ export default function ManageStudents() {
                   <th>Father's Name</th>
                   <th>Email</th>
                   <th>Phone</th>
+                  <th>Batch Duration</th>
                   <th>Enrolled Subjects</th>
                   <th>Fee Details</th>
                   <th>Added By</th>
@@ -568,6 +579,20 @@ export default function ManageStudents() {
                     <td>{s.fatherName || "N/A"}</td>
                     <td>{s.email}</td>
                     <td>{s.phone}</td>
+                    <td>
+                      <span
+                        style={{
+                          background: "#e0e7ff",
+                          color: "#4338ca",
+                          padding: "2px 10px",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {s.batchDuration || "45 days"}
+                      </span>
+                    </td>
                     <td>
                       <div className="subject-tags-inline">
                         {(s.subjects || []).length > 0 ? (
@@ -748,7 +773,7 @@ export default function ManageStudents() {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal - with Batch Duration dropdown */}
       {canAddStudents && showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
@@ -815,6 +840,24 @@ export default function ManageStudents() {
                 }}
                 maxLength="10"
               />
+            </div>
+
+            {/* 🆕 Batch Duration Dropdown */}
+            <div className="form-group">
+              <label className="form-label">Select Batch Duration *</label>
+              <select
+                className="form-control"
+                value={form.batchDuration}
+                onChange={(e) =>
+                  setForm({ ...form, batchDuration: e.target.value })
+                }
+              >
+                {batchDurationOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div
@@ -1018,7 +1061,7 @@ export default function ManageStudents() {
         </div>
       )}
 
-      {/* Assign/Change Teacher Modal with Subject Validation */}
+      {/* Assign/Change Teacher Modal */}
       {isAdmin && showAssignModal && selectedStudent && (
         <div
           className="modal-overlay"
@@ -1042,7 +1085,6 @@ export default function ManageStudents() {
               </button>
             </div>
 
-            {/* Current Teacher Info */}
             {selectedStudent.teacher && (
               <div
                 style={{
