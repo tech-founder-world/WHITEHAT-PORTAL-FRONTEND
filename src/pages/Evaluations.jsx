@@ -28,9 +28,9 @@ export default function Evaluations() {
 
   const fetchProjects = async () => {
     try {
-      console.log("Fetching projects...");
+      // console.log("Fetching projects...");
       const res = await api.get("/projects");
-      console.log("Projects response:", res.data);
+      // console.log("Projects response:", res.data);
       setProjects(res.data || []);
     } catch (err) {
       console.error("Error fetching projects:", err);
@@ -53,7 +53,7 @@ export default function Evaluations() {
     api
       .get(`/projects/${selectedProject}`)
       .then((res) => {
-        console.log("Project data:", res.data);
+        // console.log("Project data:", res.data);
         const project = res.data;
         const studentList = project.students || [];
         setStudents(studentList);
@@ -90,7 +90,7 @@ export default function Evaluations() {
     api
       .get(`/evaluations?projectId=${selectedProject}&date=${date}`)
       .then((res) => {
-        console.log("Existing evaluations:", res.data);
+        // console.log("Existing evaluations:", res.data);
         setScores((prev) => {
           const updated = { ...prev };
           students.forEach((s) => {

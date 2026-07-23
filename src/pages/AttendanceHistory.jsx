@@ -510,10 +510,10 @@ export default function AttendanceHistory() {
         let allStudents = [];
 
         if (isAdmin) {
-          console.log("Admin fetching all students...");
+          // console.log("Admin fetching all students...");
           const stuRes = await api.get("/students");
           allStudents = stuRes.data || [];
-          console.log("Students fetched:", allStudents.length);
+          // console.log("Students fetched:", allStudents.length);
 
           // Get all subjects from students
           const s = new Set();
@@ -522,10 +522,10 @@ export default function AttendanceHistory() {
           );
           setAllSubjects([...s].sort());
         } else if (isCounsellor) {
-          console.log("Counsellor fetching assigned students...");
+          // console.log("Counsellor fetching assigned students...");
           const stuRes = await api.get("/counsellor/students");
           allStudents = stuRes.data || [];
-          console.log("Assigned students fetched:", allStudents.length);
+          // console.log("Assigned students fetched:", allStudents.length);
 
           // Get all subjects from assigned students
           const s = new Set();
@@ -535,10 +535,10 @@ export default function AttendanceHistory() {
           setAllSubjects([...s].sort());
         } else {
           // Teacher
-          console.log(
-            "Teacher fetching students for subjects:",
-            teacherSubjects,
-          );
+          // console.log(
+          //   "Teacher fetching students for subjects:",
+          //   teacherSubjects,
+          // );
           setAllSubjects(teacherSubjects);
 
           if (teacherSubjects.length > 0) {
@@ -560,7 +560,7 @@ export default function AttendanceHistory() {
               });
             });
             allStudents.sort((a, b) => a.name?.localeCompare(b.name) || 0);
-            console.log("Students fetched for teacher:", allStudents.length);
+            // console.log("Students fetched for teacher:", allStudents.length);
           } else {
             console.log("No subjects assigned to teacher");
           }
@@ -569,9 +569,9 @@ export default function AttendanceHistory() {
         setStudents(allStudents);
 
         // Fetch attendance stats
-        console.log("Fetching attendance stats...");
+        // console.log("Fetching attendance stats...");
         const statsRes = await api.get("/attendance/stats");
-        console.log("Stats response:", statsRes.data);
+        // console.log("Stats response:", statsRes.data);
 
         const map = {};
         statsRes.data.forEach((s) => {
@@ -584,7 +584,7 @@ export default function AttendanceHistory() {
           }
         });
         setStatsMap(map);
-        console.log("Stats map created:", Object.keys(map).length);
+        // console.log("Stats map created:", Object.keys(map).length);
       } catch (err) {
         console.error("Error loading data:", err);
         showToast(

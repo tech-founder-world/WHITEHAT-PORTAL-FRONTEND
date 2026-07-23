@@ -35,7 +35,7 @@ export default function MarkAttendance() {
     api
       .get(`/students?subject=${encodeURIComponent(subject)}`)
       .then((r) => {
-        console.log("Students for subject:", r.data);
+        // console.log("Students for subject:", r.data);
         // Filter to only show students assigned to this teacher
         const assignedStudents = r.data.filter(
           (s) => s.teacher?._id === user._id || s.teacher === user._id,
@@ -85,7 +85,7 @@ export default function MarkAttendance() {
     api
       .get(`/attendance?subject=${encodeURIComponent(subject)}&date=${date}`)
       .then((r) => {
-        console.log("Existing attendance:", r.data);
+        // console.log("Existing attendance:", r.data);
         setExistingRecords(r.data);
         const map = {};
         // First set all to absent
@@ -139,7 +139,7 @@ export default function MarkAttendance() {
         status: attendance[s._id] || "absent",
       }));
 
-      console.log("Saving attendance:", { records, subject, date });
+      // console.log("Saving attendance:", { records, subject, date });
 
       const response = await api.post("/attendance/bulk", {
         records,
@@ -147,7 +147,7 @@ export default function MarkAttendance() {
         date,
       });
 
-      console.log("Save response:", response.data);
+      // console.log("Save response:", response.data);
       showToast(
         `Attendance saved successfully ✅ (${response.data.records?.length || records.length} records)`,
         "success",

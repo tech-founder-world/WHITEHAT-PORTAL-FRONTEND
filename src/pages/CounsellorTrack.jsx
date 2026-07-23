@@ -26,9 +26,9 @@ export default function CounsellorTrack() {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      console.log("📡 Fetching placement applications for counsellor...");
+      // console.log("📡 Fetching placement applications for counsellor...");
       const response = await api.get("/placement/applications/all");
-      console.log("✅ Applications loaded:", response.data?.length || 0);
+      // console.log("✅ Applications loaded:", response.data?.length || 0);
       setApplications(response.data || []);
     } catch (err) {
       console.error("Error fetching applications:", err);
@@ -79,7 +79,7 @@ export default function CounsellorTrack() {
         totalInterviewsRejected: Number(editData.totalInterviewsRejected) || 0,
       };
 
-      console.log("📦 Updating application:", payload);
+      // console.log("📦 Updating application:", payload);
       const response = await api.put(`/placement/applications/${applicationId}/counsellor-update`, payload);
       
       if (response.data.success) {

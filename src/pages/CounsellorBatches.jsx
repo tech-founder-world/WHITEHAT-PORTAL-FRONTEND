@@ -47,9 +47,9 @@ export default function CounsellorBatches() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log("📡 Counsellor fetching batches...");
+      // console.log("📡 Counsellor fetching batches...");
       const batchesRes = await api.get("/batches");
-      console.log("✅ Batches loaded:", batchesRes.data?.length || 0);
+      // console.log("✅ Batches loaded:", batchesRes.data?.length || 0);
       setBatches(batchesRes.data || []);
       setFilteredBatches(batchesRes.data || []);
     } catch (err) {
