@@ -101,7 +101,6 @@ export default function Login() {
 
       <header className="institute-header">
         <div className="institute-logo">
-<<<<<<< HEAD
           <div >
             {/* <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
               <rect width="36" height="36" rx="10" fill="#E8470A" />
@@ -125,10 +124,7 @@ export default function Login() {
             <span className="logo-sub">Coders</span>
           </div> */}
           <img src="../logo whc.png" alt="" />
-=======
-          <img src="/logo.jpeg" alt="Logo" className="login-logo-img" />
           {/* Removed text logo */}
->>>>>>> 0f16ab5b23fc014182e1b22ade027488188ff282
         </div>
         <div className="header-actions">
           <a href="#" className="header-link">
