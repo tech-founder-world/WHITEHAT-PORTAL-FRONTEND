@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 import "../css/ManageCounsellors.css";
 
@@ -268,115 +268,136 @@ export default function ManageCounsellors() {
               </thead>
               <tbody>
                 {filteredCounsellors.map((c, i) => (
-                  <tr key={c._id}>
-                    <td className="text-muted">{i + 1}</td>
-                    <td>
-                      <div className="counsellor-name-cell">
-                        <div className="counsellor-avatar">
-                          {c.name[0].toUpperCase()}
+                  <React.Fragment key={c._id}>
+                    <tr>
+                      <td className="text-muted">{i + 1}</td>
+                      <td>
+                        <div className="counsellor-name-cell">
+                          <div className="counsellor-avatar">
+                            {c.name[0].toUpperCase()}
+                          </div>
+                          <strong>{c.name}</strong>
                         </div>
-                        <strong>{c.name}</strong>
-                      </div>
-                    </td>
-                    <td className="text-muted">{c.email}</td>
-                    <td>
-                      <span className="specialization-tag">
-                        {c.specialization || "General"}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        className="btn btn-outline btn-sm"
-                        onClick={() => toggleExpand(c._id)}
-                      >
-                        {c.students?.length || 0} Students{" "}
-                        {expandedCounsellor === c._id ? "▲" : "▼"}
-                      </button>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", gap: "6px" }}>
+                      </td>
+                      <td className="text-muted">{c.email}</td>
+                      <td>
+                        <span className="specialization-tag">
+                          {c.specialization || "General"}
+                        </span>
+                      </td>
+                      <td>
                         <button
                           className="btn btn-outline btn-sm"
-                          onClick={() => openEdit(c)}
+                          onClick={() => toggleExpand(c._id)}
                         >
-                          Edit
+                          {c.students?.length || 0} Students{" "}
+                          {expandedCounsellor === c._id ? "▲" : "▼"}
                         </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDelete(c._id, c.name)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => openEdit(c)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDelete(c._id, c.name)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Expanded student list - directly below this counsellor's row */}
+                    {expandedCounsellor === c._id && (
+                      <tr>
+                        <td colSpan="6" style={{ padding: 0 }}>
+                          <div
+                            style={{
+                              padding: "16px",
+                              background: "var(--gray-50)",
+                              borderTop: "2px solid var(--gray-200)",
+                              borderBottom: "2px solid var(--gray-200)",
+                            }}
+                          >
+                            <h4
+                              style={{ marginBottom: "12px", fontSize: "14px" }}
+                            >
+                              Students added by <strong>{c.name}</strong>
+                              <span
+                                style={{
+                                  marginLeft: "10px",
+                                  fontSize: "12px",
+                                  color: "var(--gray-500)",
+                                  fontWeight: "normal",
+                                }}
+                              >
+                                ({c.students?.length || 0} students)
+                              </span>
+                            </h4>
+                            {c.students?.length > 0 ? (
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fill, minmax(220px, 1fr))",
+                                  gap: "8px",
+                                }}
+                              >
+                                {c.students.map((student) => (
+                                  <div
+                                    key={student._id}
+                                    style={{
+                                      padding: "8px 12px",
+                                      background: "var(--white)",
+                                      borderRadius: "6px",
+                                      border: "1px solid var(--gray-200)",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <span style={{ fontWeight: "500" }}>
+                                      {student.name}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "var(--gray-500)",
+                                      }}
+                                    >
+                                      {student.subjects?.join(", ") ||
+                                        "No subjects"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p
+                                style={{
+                                  color: "var(--gray-500)",
+                                  fontSize: "13px",
+                                }}
+                              >
+                                No students added yet
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
-
-            {/* Expanded student list for each counsellor */}
-            {expandedCounsellor && (
-              <div
-                style={{
-                  marginTop: "16px",
-                  padding: "16px",
-                  background: "var(--gray-50)",
-                  borderRadius: "var(--border-radius)",
-                }}
-              >
-                <h4 style={{ marginBottom: "12px" }}>
-                  Students added by{" "}
-                  {counsellors.find((c) => c._id === expandedCounsellor)?.name}
-                </h4>
-                {counsellors.find((c) => c._id === expandedCounsellor)?.students
-                  ?.length > 0 ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(200px, 1fr))",
-                      gap: "8px",
-                    }}
-                  >
-                    {counsellors
-                      .find((c) => c._id === expandedCounsellor)
-                      ?.students.map((student) => (
-                        <div
-                          key={student._id}
-                          style={{
-                            padding: "8px 12px",
-                            background: "var(--white)",
-                            borderRadius: "6px",
-                            border: "1px solid var(--gray-200)",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span>{student.name}</span>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              color: "var(--gray-500)",
-                            }}
-                          >
-                            {student.subjects?.join(", ") || "No subjects"}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p style={{ color: "var(--gray-500)", fontSize: "13px" }}>
-                    No students added yet
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* Modal - Removed student assignment */}
+      {/* Modal - Add/Edit Counsellor */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div

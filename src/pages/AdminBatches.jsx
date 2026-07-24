@@ -94,7 +94,6 @@ export default function AdminBatches() {
   // Filter students when search changes
   useEffect(() => {
     if (!studentSearch.trim()) {
-      // When no search, show all filtered students (already filtered by teacher subject)
       setFilteredStudents(allStudents);
       return;
     }
@@ -171,21 +170,17 @@ export default function AdminBatches() {
     setShowBatchDetailsModal(true);
   };
 
-  // 🆕 Updated: Open Add Students Modal with filtering by teacher's subjects
   const openAddStudents = (batch) => {
     setSelectedBatch(batch);
     const existingIds = (batch.students || []).map((s) => s._id || s);
     setSelectedStudents(existingIds);
     setStudentSearch("");
 
-    // 🆕 Filter students based on the batch's teacher subjects
     if (batch.createdBy) {
-      // Get the teacher's subjects
       const teacherId = batch.createdBy._id || batch.createdBy;
       const teacher = allTeachers.find((t) => t._id === teacherId);
 
       if (teacher && teacher.subjects && teacher.subjects.length > 0) {
-        // Filter students who have at least one matching subject with the teacher
         const teacherSubjects = teacher.subjects.map((s) =>
           s.toUpperCase().trim(),
         );
@@ -198,7 +193,6 @@ export default function AdminBatches() {
         setAllStudents(matchingStudents);
         setFilteredStudents(matchingStudents);
       } else {
-        // If teacher has no subjects, show all students (but warn)
         setAllStudents(allStudents);
         setFilteredStudents(allStudents);
         if (teacher) {
@@ -209,7 +203,6 @@ export default function AdminBatches() {
         }
       }
     } else {
-      // If no teacher assigned, show all students
       setAllStudents(allStudents);
       setFilteredStudents(allStudents);
     }
@@ -594,7 +587,9 @@ export default function AdminBatches() {
                 >
                   <div className="batch-header">
                     <div>
-                      <h3 className="batch-name">{batch.name}</h3>
+                      <h3 className="batch-name" title={batch.name}>
+                        {batch.name}
+                      </h3>
                       <span
                         className="batch-category"
                         style={{ color: category.color }}
@@ -627,7 +622,7 @@ export default function AdminBatches() {
                     )}
                     <div
                       style={{
-                        fontSize: "13px",
+                        fontSize: "12px",
                         color: "var(--text-muted)",
                         marginTop: "4px",
                       }}
@@ -636,67 +631,48 @@ export default function AdminBatches() {
                     </div>
 
                     {/* Topics Section */}
-                    <div className="batch-topics" style={{ marginTop: "12px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <strong style={{ fontSize: "13px" }}>
-                          📝 Topics Covered ({batch.topics?.length || 0})
-                        </strong>
+                    <div className="batch-topics">
+                      <div className="topics-header">
+                        <strong>📝 Topics ({batch.topics?.length || 0})</strong>
                         <button
                           className="btn btn-primary btn-sm"
                           onClick={() => openTopicModal(batch)}
+                          style={{ padding: "2px 10px", fontSize: "11px" }}
                         >
-                          + Add Topic
+                          + Add
                         </button>
                       </div>
-                      {batch.topics?.length > 0 ? (
-                        <div
-                          style={{
-                            marginTop: "8px",
-                            maxHeight: "150px",
-                            overflowY: "auto",
-                          }}
-                        >
-                          {batch.topics.map((t, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                fontSize: "12px",
-                                padding: "4px 0",
-                                borderBottom: "1px solid var(--gray-100)",
-                              }}
-                            >
-                              <div>
-                                <span style={{ fontWeight: 600 }}>
+                      <div className="topics-list">
+                        {batch.topics?.length > 0 ? (
+                          batch.topics.map((t, i) => (
+                            <div key={i} className="topic-item">
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  flex: 1,
+                                  minWidth: 0,
+                                }}
+                              >
+                                <span className="topic-name" title={t.topic}>
                                   {t.topic}
                                 </span>
-                                <span
-                                  style={{
-                                    color: "var(--gray-500)",
-                                    marginLeft: "8px",
-                                  }}
-                                >
+                                <span className="topic-date">
                                   {t.date
                                     ? new Date(t.date).toLocaleDateString()
                                     : ""}
                                 </span>
                               </div>
-                              <div style={{ display: "flex", gap: "4px" }}>
+                              <div className="topic-actions">
                                 <button
                                   className="btn btn-outline btn-sm"
                                   onClick={() => openTopicModal(batch, i)}
                                   style={{
-                                    padding: "2px 6px",
+                                    padding: "1px 5px",
                                     fontSize: "10px",
                                   }}
+                                  title="Edit Topic"
                                 >
                                   ✏️
                                 </button>
@@ -706,55 +682,61 @@ export default function AdminBatches() {
                                     handleDeleteTopic(batch._id, i)
                                   }
                                   style={{
-                                    padding: "2px 6px",
+                                    padding: "1px 5px",
                                     fontSize: "10px",
                                   }}
+                                  title="Delete Topic"
                                 >
                                   ×
                                 </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p
-                          style={{
-                            fontSize: "12px",
-                            color: "var(--gray-500)",
-                            marginTop: "4px",
-                          }}
-                        >
-                          No topics added yet
-                        </p>
-                      )}
+                          ))
+                        ) : (
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "var(--gray-500)",
+                              marginTop: "4px",
+                            }}
+                          >
+                            No topics added yet
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
+                  {/* Updated Batch Actions - Two Rows */}
                   <div className="batch-actions">
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => openBatchDetails(batch)}
-                    >
-                      👁️ View Students
-                    </button>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => openAddStudents(batch)}
-                    >
-                      ➕ Add Students
-                    </button>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => openEditBatch(batch)}
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => confirmDelete(batch)}
-                    >
-                      🗑️ Delete
-                    </button>
+                    <div className="batch-actions-row">
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => openBatchDetails(batch)}
+                      >
+                        👁️ View Students
+                      </button>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => openAddStudents(batch)}
+                      >
+                        ➕ Add Students
+                      </button>
+                    </div>
+                    <div className="batch-actions-row">
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => openEditBatch(batch)}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => confirmDelete(batch)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -783,7 +765,6 @@ export default function AdminBatches() {
               </button>
             </div>
 
-            {/* Category Field */}
             <div className="form-group">
               <label className="form-label">Category *</label>
               <select
@@ -799,7 +780,6 @@ export default function AdminBatches() {
               </select>
             </div>
 
-            {/* Batch Name */}
             <div className="form-group">
               <label className="form-label">Batch Name *</label>
               <input
@@ -810,7 +790,6 @@ export default function AdminBatches() {
               />
             </div>
 
-            {/* Duration & Duration Type */}
             <div
               className="form-row"
               style={{
@@ -847,7 +826,6 @@ export default function AdminBatches() {
               </div>
             </div>
 
-            {/* Description */}
             <div className="form-group">
               <label className="form-label">Description</label>
               <textarea
@@ -861,7 +839,6 @@ export default function AdminBatches() {
               />
             </div>
 
-            {/* Start & End Date */}
             <div
               className="form-row"
               style={{
@@ -894,7 +871,6 @@ export default function AdminBatches() {
               </div>
             </div>
 
-            {/* Max Students */}
             <div className="form-group">
               <label className="form-label">Max Students</label>
               <input
@@ -911,7 +887,6 @@ export default function AdminBatches() {
               />
             </div>
 
-            {/* Assign Teacher - ADMIN ONLY */}
             <div className="form-group">
               <label className="form-label">Assign Teacher</label>
               <select
@@ -920,11 +895,6 @@ export default function AdminBatches() {
                 onChange={(e) => {
                   const teacherId = e.target.value;
                   setForm({ ...form, createdBy: teacherId });
-
-                  // 🆕 When teacher changes, update the student filter
-                  if (teacherId && selectedBatch) {
-                    // We'll filter students when opening the add students modal
-                  }
                 }}
               >
                 <option value="">None</option>
@@ -937,7 +907,6 @@ export default function AdminBatches() {
               </select>
             </div>
 
-            {/* Status - ADMIN ONLY */}
             <div className="form-group">
               <label className="form-label">Status</label>
               <select
@@ -974,7 +943,7 @@ export default function AdminBatches() {
         </div>
       )}
 
-      {/* ADD STUDENTS MODAL - Filtered by Teacher's Subjects */}
+      {/* ADD STUDENTS MODAL */}
       {showStudentModal && selectedBatch && (
         <div
           className="modal-overlay"
@@ -1002,7 +971,6 @@ export default function AdminBatches() {
                   Select students to add to this batch.
                 </p>
 
-                {/* 🆕 Show teacher subject info */}
                 {selectedBatch.createdBy && (
                   <div
                     style={{
@@ -1156,7 +1124,6 @@ export default function AdminBatches() {
                     );
                     const isSelected = selectedStudents.includes(student._id);
 
-                    // Show which subjects match the teacher
                     const teacherId =
                       selectedBatch.createdBy?._id || selectedBatch.createdBy;
                     const teacher = allTeachers.find(

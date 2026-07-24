@@ -1,12 +1,12 @@
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: 'https://whitehat-portal-backend.onrender.com/api',
+  baseURL: "http://localhost:5000/api",
 });
 
 // Attach token from localStorage automatically
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('ams_token');
+  const token = localStorage.getItem("ams_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

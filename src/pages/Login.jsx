@@ -101,7 +101,7 @@ export default function Login() {
 
       <header className="institute-header">
         <div className="institute-logo">
-          <div >
+          <div>
             {/* <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
               <rect width="36" height="36" rx="10" fill="#E8470A" />
               <path
@@ -187,7 +187,7 @@ export default function Login() {
             {/* Slogan */}
             <div className="trust-badge">
               <span className="slogan-text">
-                WhiteHead Coders — Built for excellence
+                WhiteHat Coders — Built for excellence
               </span>
             </div>
           </div>

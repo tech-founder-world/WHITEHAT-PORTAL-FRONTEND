@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 import "../css/ManageTeachers.css";
 
@@ -315,123 +315,144 @@ export default function ManageTeachers() {
               </thead>
               <tbody>
                 {filteredTeachers.map((t, i) => (
-                  <tr key={t._id}>
-                    <td className="text-muted">{i + 1}</td>
-                    <td>
-                      <div className="teacher-name-cell">
-                        <div className="teacher-avatar">
-                          {t.name[0].toUpperCase()}
+                  <React.Fragment key={t._id}>
+                    <tr>
+                      <td className="text-muted">{i + 1}</td>
+                      <td>
+                        <div className="teacher-name-cell">
+                          <div className="teacher-avatar">
+                            {t.name[0].toUpperCase()}
+                          </div>
+                          <strong>{t.name}</strong>
                         </div>
-                        <strong>{t.name}</strong>
-                      </div>
-                    </td>
-                    <td className="text-muted">{t.email}</td>
-                    <td>
-                      <div className="subject-tags-inline">
-                        {t.subjects.length > 0 ? (
-                          t.subjects.map((s) => (
-                            <span key={s} className="subject-tag">
-                              {s}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        className="btn btn-outline btn-sm"
-                        onClick={() => toggleExpand(t._id)}
-                      >
-                        {t.students?.length || 0} Students{" "}
-                        {expandedTeacher === t._id ? "▲" : "▼"}
-                      </button>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", gap: "6px" }}>
+                      </td>
+                      <td className="text-muted">{t.email}</td>
+                      <td>
+                        <div className="subject-tags-inline">
+                          {t.subjects.length > 0 ? (
+                            t.subjects.map((s) => (
+                              <span key={s} className="subject-tag">
+                                {s}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
                         <button
                           className="btn btn-outline btn-sm"
-                          onClick={() => openEdit(t)}
+                          onClick={() => toggleExpand(t._id)}
                         >
-                          Edit
+                          {t.students?.length || 0} Students{" "}
+                          {expandedTeacher === t._id ? "▲" : "▼"}
                         </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDelete(t._id, t.name)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => openEdit(t)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDelete(t._id, t.name)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Expanded student list - directly below this teacher's row */}
+                    {expandedTeacher === t._id && (
+                      <tr>
+                        <td colSpan="6" style={{ padding: 0 }}>
+                          <div
+                            style={{
+                              padding: "16px",
+                              background: "var(--gray-50)",
+                              borderTop: "2px solid var(--gray-200)",
+                              borderBottom: "2px solid var(--gray-200)",
+                            }}
+                          >
+                            <h4
+                              style={{ marginBottom: "12px", fontSize: "14px" }}
+                            >
+                              Students assigned to <strong>{t.name}</strong>
+                              <span
+                                style={{
+                                  marginLeft: "10px",
+                                  fontSize: "12px",
+                                  color: "var(--gray-500)",
+                                  fontWeight: "normal",
+                                }}
+                              >
+                                ({t.students?.length || 0} students)
+                              </span>
+                            </h4>
+                            {t.students?.length > 0 ? (
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fill, minmax(220px, 1fr))",
+                                  gap: "8px",
+                                }}
+                              >
+                                {t.students.map((student) => (
+                                  <div
+                                    key={student._id}
+                                    style={{
+                                      padding: "8px 12px",
+                                      background: "var(--white)",
+                                      borderRadius: "6px",
+                                      border: "1px solid var(--gray-200)",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <span style={{ fontWeight: "500" }}>
+                                      {student.name}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "var(--gray-500)",
+                                      }}
+                                    >
+                                      {student.subjects?.join(", ") ||
+                                        "No subjects"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p
+                                style={{
+                                  color: "var(--gray-500)",
+                                  fontSize: "13px",
+                                }}
+                              >
+                                No students assigned yet
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
-
-            {/* Expanded student list for each teacher */}
-            {expandedTeacher && (
-              <div
-                style={{
-                  marginTop: "16px",
-                  padding: "16px",
-                  background: "var(--gray-50)",
-                  borderRadius: "var(--border-radius)",
-                }}
-              >
-                <h4 style={{ marginBottom: "12px" }}>
-                  Students assigned to{" "}
-                  {teachers.find((t) => t._id === expandedTeacher)?.name}
-                </h4>
-                {teachers.find((t) => t._id === expandedTeacher)?.students
-                  ?.length > 0 ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(200px, 1fr))",
-                      gap: "8px",
-                    }}
-                  >
-                    {teachers
-                      .find((t) => t._id === expandedTeacher)
-                      ?.students.map((student) => (
-                        <div
-                          key={student._id}
-                          style={{
-                            padding: "8px 12px",
-                            background: "var(--white)",
-                            borderRadius: "6px",
-                            border: "1px solid var(--gray-200)",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span>{student.name}</span>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              color: "var(--gray-500)",
-                            }}
-                          >
-                            {student.subjects?.join(", ") || "No subjects"}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p style={{ color: "var(--gray-500)", fontSize: "13px" }}>
-                    No students assigned yet
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* Modal - Same as before */}
+      {/* Add/Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div
