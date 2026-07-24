@@ -18,7 +18,7 @@ const emptyForm = {
 // 🆕 Single dropdown with ALL options
 const batchTypeOptions = [
   { value: "Premium", label: "👑 Premium", color: "#fef3c7", textColor: "#92400e" },
-  { value: "Platinum", label: "💎 Platinum", color: "#e5e7eb", textColor: "#374151" },
+  { value: "Regular", label: "💎 Regular", color: "#e5e7eb", textColor: "#374151" },
   { value: "Diploma", label: "📜 Diploma", color: "#dbeafe", textColor: "#1e40af" },
   { value: "45 days", label: "📅 45 Days", color: "#d1fae5", textColor: "#065f46" },
   { value: "3 months", label: "📅 3 Months", color: "#e0e7ff", textColor: "#4338ca" },
